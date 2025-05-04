@@ -4,6 +4,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import MealTrackerScreen from './src/screens/MealTrackerScreen';
 import WorkoutScreen from './src/screens/WorkoutScreen';
+import WorkoutDetailScreen from './src/screens/WorkoutDetailScreen';
 import DietScreen from './src/screens/DietScreen';
 
 const Stack = createStackNavigator();
@@ -16,6 +17,7 @@ export default function App() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="MealTracker" component={MealTrackerScreen} />
         <Stack.Screen name="Workout" component={WorkoutScreen} />
+        <Stack.Screen name="WorkoutDetail" component={WorkoutDetailScreen} />
         <Stack.Screen name="Diet" component={DietScreen} />
       </Stack.Navigator>
     </NavigationContainer>

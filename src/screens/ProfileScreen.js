@@ -11,36 +11,45 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import BMICalculator from "../components/BMICalculator";
 
 const ProfileScreen = () => {
-  const [height, setHeight] = useState("170");
-  const [weight, setWeight] = useState("70");
-  const [gender, setGender] = useState("Erkek");
-  const [bmi, setBmi] = useState(null); // BMI değerini tutacak state
+  const [height, setHeight] = useState();
+  const [weight, setWeight] = useState();
+  const [gender, setGender] = useState();
+  const [bmi, setBmi] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [currentSelection, setCurrentSelection] = useState(null);
   const [selectionList, setSelectionList] = useState([]);
 
-  // Veriyi kaydetme
   const saveData = async () => {
     try {
-      const calculatedBmi = handleCalculateBMI(); // Kaydetmeden önce BMI'yi hesapla
-      const userData = { height, weight, gender, bmi: calculatedBmi }; // BMI'yı da ekle
+      const calculatedBmi = handleCalculateBMI();
+      if (calculatedBmi === null) {
+        alert("Lütfen boy ve kilo bilgilerini giriniz.");
+        return;
+      }
+      const userData = { height, weight, gender, bmi: calculatedBmi };
       await AsyncStorage.setItem("userProfile", JSON.stringify(userData));
       alert("Bilgiler Kaydedildi!");
-      setBmi(calculatedBmi); // State'i güncelle
+      setBmi(calculatedBmi);
     } catch (error) {
       console.error("Veri kaydedilirken hata oluştu:", error);
     }
   };
 
-  // BMI hesaplama fonksiyonu
   const handleCalculateBMI = () => {
-    const heightInMeters = parseFloat(height) / 100; // Boyu metreye çevir
-    const calculatedBmi = parseFloat(weight) / (heightInMeters * heightInMeters);
-    return calculatedBmi.toFixed(2); // Hesaplanan BMI değerini döndür
+    if (!height || !weight) return null;
+
+    const heightInMeters = parseFloat(height) / 100;
+    const parsedWeight = parseFloat(weight);
+
+    if (isNaN(heightInMeters) || isNaN(parsedWeight) || heightInMeters === 0) {
+      return null;
+    }
+
+    const calculatedBmi = parsedWeight / (heightInMeters * heightInMeters);
+    return calculatedBmi.toFixed(2);
   };
 
-  // Uygulama açıldığında veriyi yükleme
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -50,7 +59,7 @@ const ProfileScreen = () => {
           setHeight(parsedData.height);
           setWeight(parsedData.weight);
           setGender(parsedData.gender);
-          setBmi(parsedData.bmi); // Kaydedilmiş BMI değerini al
+          setBmi(parsedData.bmi);
         }
       } catch (error) {
         console.error("Veri yüklenirken hata oluştu:", error);
@@ -59,7 +68,6 @@ const ProfileScreen = () => {
     loadData();
   }, []);
 
-  // Seçim modalını açma
   const openModal = (type) => {
     setCurrentSelection(type);
     if (type === "height") {
@@ -72,7 +80,6 @@ const ProfileScreen = () => {
     setModalVisible(true);
   };
 
-  // Seçimi güncelleme
   const selectValue = (value) => {
     if (currentSelection === "height") setHeight(value);
     if (currentSelection === "weight") setWeight(value);
@@ -86,27 +93,25 @@ const ProfileScreen = () => {
 
       <Text style={styles.label}>Boy Seç (cm):</Text>
       <TouchableOpacity style={styles.selectionBox} onPress={() => openModal("height")}>
-        <Text style={styles.selectionText}>{height} cm</Text>
+        <Text style={styles.selectionText}>{height ? `${height} cm` : "Seçiniz"}</Text>
       </TouchableOpacity>
 
       <Text style={styles.label}>Kilo Seç (kg):</Text>
       <TouchableOpacity style={styles.selectionBox} onPress={() => openModal("weight")}>
-        <Text style={styles.selectionText}>{weight} kg</Text>
+        <Text style={styles.selectionText}>{weight ? `${weight} kg` : "Seçiniz"}</Text>
       </TouchableOpacity>
 
       <Text style={styles.label}>Cinsiyet Seç:</Text>
       <TouchableOpacity style={styles.selectionBox} onPress={() => openModal("gender")}>
-        <Text style={styles.selectionText}>{gender}</Text>
+        <Text style={styles.selectionText}>{gender || "Seçiniz"}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.saveButton} onPress={saveData}>
         <Text style={styles.saveButtonText}>Kaydet</Text>
       </TouchableOpacity>
 
-      {/* Vücut Kitle Endeksi Bileşeni */}
       <BMICalculator bmi={bmi} />
 
-      {/* Seçim Modalı */}
       <Modal animationType="slide" transparent={true} visible={modalVisible}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
