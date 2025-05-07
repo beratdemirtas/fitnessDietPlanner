@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const WorkoutScreen = ({ navigation }) => {
   const [exercises, setExercises] = useState([]);
   const [bmiCategory, setBmiCategory] = useState(null);
+  const [completedExercises, setCompletedExercises] = useState([]);
 
   // Kullanıcının BMI kategorisini yükleme
   useEffect(() => {
@@ -37,6 +38,29 @@ const WorkoutScreen = ({ navigation }) => {
     }
   }, [bmiCategory]);
 
+  // Tamamlanan hareketleri yükleme
+  useEffect(() => {
+    const loadCompletedExercises = async () => {
+      try {
+        const completedData = await AsyncStorage.getItem('completedExercises');
+        const completed = completedData ? JSON.parse(completedData) : {};
+        const today = new Date().toISOString().split('T')[0];
+
+        // Eğer bugün için tamamlanan hareketler yoksa, sıfırla
+        if (!completed[today]) {
+          completed[today] = [];
+          await AsyncStorage.setItem('completedExercises', JSON.stringify(completed));
+        }
+
+        setCompletedExercises(completed[today]);
+      } catch (error) {
+        console.error('Tamamlanan hareketler yüklenirken hata oluştu:', error);
+      }
+    };
+
+    loadCompletedExercises();
+  }, []);
+
   // BMI kategorisini belirleme fonksiyonu
   const getBMICategory = (bmiValue) => {
     if (bmiValue < 18.5) return 'zayif';
@@ -45,16 +69,50 @@ const WorkoutScreen = ({ navigation }) => {
     return 'obez';
   };
 
+  // Hareketi tamamlandı olarak işaretleme
+  const completeExercise = async (exerciseId) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const completedData = await AsyncStorage.getItem('completedExercises');
+      const completed = completedData ? JSON.parse(completedData) : {};
+
+      if (!completed[today]) {
+        completed[today] = [];
+      }
+
+      if (!completed[today].includes(exerciseId)) {
+        completed[today].push(exerciseId);
+        setCompletedExercises([...completed[today]]);
+      }
+
+      await AsyncStorage.setItem('completedExercises', JSON.stringify(completed));
+    } catch (error) {
+      console.error('Hareket tamamlanırken hata oluştu:', error);
+    }
+  };
+
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => navigation.navigate('WorkoutDetail', { exercise: item })}
     >
       <Image source={{ uri: item.gifUrl }} style={styles.image} />
-      <View>
+      <View style={{ flex: 1 }}>
         <Text style={styles.title}>{item.name}</Text>
         <Text style={styles.subtitle}>Ekipman: {item.equipment}</Text>
       </View>
+      <TouchableOpacity
+        style={[
+          styles.completeButton,
+          completedExercises.includes(item.id) && styles.completedButton,
+        ]}
+        onPress={() => completeExercise(item.id)}
+        disabled={completedExercises.includes(item.id)}
+      >
+        <Text style={styles.completeButtonText}>
+          {completedExercises.includes(item.id) ? 'Completed' : 'Complete'}
+        </Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -88,6 +146,20 @@ const styles = StyleSheet.create({
   image: { width: 80, height: 80, marginRight: 10 },
   title: { fontSize: 16, fontWeight: 'bold' },
   subtitle: { fontSize: 14, color: 'gray' },
+  completeButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 5,
+  },
+  completedButton: {
+    backgroundColor: '#A5D6A7',
+    opacity: 0.6,
+  },
+  completeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   noDataText: { fontSize: 16, color: 'gray', textAlign: 'center', marginTop: 20 },
 });
 
