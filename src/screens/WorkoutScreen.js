@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, ScrollView } from 'react-native';
 import exercisesData from '../../assets/data/exercises.json';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const WorkoutScreen = ({ navigation }) => {
   const [exercises, setExercises] = useState([]);
@@ -117,18 +118,20 @@ const WorkoutScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Workout Recommendations</Text>
-      {bmiCategory ? (
-        <FlatList
-          data={exercises}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-        />
-      ) : (
-        <Text style={styles.noDataText}>Lütfen önce BMI değerinizi kaydedin.</Text>
-      )}
-    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <ScrollView style={styles.container}>
+        <Text style={styles.header}>Workout Recommendations</Text>
+        {bmiCategory ? (
+          <FlatList
+            data={exercises}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+          />
+        ) : (
+          <Text style={styles.noDataText}>Lütfen önce BMI değerinizi kaydedin.</Text>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
