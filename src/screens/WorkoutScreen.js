@@ -3,33 +3,43 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, ScrollView }
 import exercisesData from '../../assets/data/exercises.json';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 const WorkoutScreen = ({ navigation }) => {
   const [exercises, setExercises] = useState([]);
+  const [bmi, setBmi] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [bmiCategory, setBmiCategory] = useState(null);
   const [completedExercises, setCompletedExercises] = useState([]);
 
-  // Kullanıcının BMI kategorisini yükleme
   useEffect(() => {
-    const loadUserData = async () => {
+    const fetchUserProfile = async () => {
       try {
-        const storedData = await AsyncStorage.getItem('userProfile');
-        if (storedData) {
-          const { bmi } = JSON.parse(storedData);
-          if (bmi) {
-            const category = getBMICategory(parseFloat(bmi));
-            setBmiCategory(category);
-          }
+        const email = await AsyncStorage.getItem('userEmail');
+        if (!email) return;
+        const response = await fetch(`http://localhost:3001/api/user/profile?email=${email}`);
+        const data = await response.json();
+        if (data && data.bmi) {
+          setBmi(data.bmi);
+        } else {
+          setBmi(null);
         }
-      } catch (error) {
-        console.error('Kullanıcı verisi yüklenirken hata oluştu:', error);
+      } catch (e) {
+        setBmi(null);
+      } finally {
+        setLoading(false);
       }
     };
-
-    loadUserData();
+    fetchUserProfile();
   }, []);
 
-  // BMI kategorisine göre hareketleri filtreleme
+  useEffect(() => {
+    if (bmi) {
+      const category = getBMICategory(parseFloat(bmi));
+      setBmiCategory(category);
+    }
+  }, [bmi]);
+
   useEffect(() => {
     if (bmiCategory) {
       const filteredExercises = exercisesData.filter(
@@ -39,7 +49,6 @@ const WorkoutScreen = ({ navigation }) => {
     }
   }, [bmiCategory]);
 
-  // Tamamlanan hareketleri yükleme
   useEffect(() => {
     const loadCompletedExercises = async () => {
       try {
@@ -47,7 +56,6 @@ const WorkoutScreen = ({ navigation }) => {
         const completed = completedData ? JSON.parse(completedData) : {};
         const today = new Date().toISOString().split('T')[0];
 
-        // Eğer bugün için tamamlanan hareketler yoksa, sıfırla
         if (!completed[today]) {
           completed[today] = [];
           await AsyncStorage.setItem('completedExercises', JSON.stringify(completed));
@@ -62,7 +70,6 @@ const WorkoutScreen = ({ navigation }) => {
     loadCompletedExercises();
   }, []);
 
-  // BMI kategorisini belirleme fonksiyonu
   const getBMICategory = (bmiValue) => {
     if (bmiValue < 18.5) return 'zayif';
     if (bmiValue < 25) return 'normal';
@@ -70,7 +77,6 @@ const WorkoutScreen = ({ navigation }) => {
     return 'obez';
   };
 
-  // Hareketi tamamlandı olarak işaretleme
   const completeExercise = async (exerciseId) => {
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -117,20 +123,27 @@ const WorkoutScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  if (loading) {
+    return <View style={styles.container}><Text>Loading...</Text></View>;
+  }
+  if (!bmi || isNaN(Number(bmi))) {
+    return <View style={styles.container}><Text style={styles.noDataText}>Please save your BMI value first.</Text></View>;
+  }
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <ScrollView style={styles.container}>
-        <Text style={styles.header}>Workout Recommendations</Text>
-        {bmiCategory ? (
-          <FlatList
-            data={exercises}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-          />
-        ) : (
-          <Text style={styles.noDataText}>Lütfen önce BMI değerinizi kaydedin.</Text>
-        )}
-      </ScrollView>
+      {bmiCategory ? (
+        <FlatList
+          style={styles.container}
+          data={exercises}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          ListHeaderComponent={<Text style={styles.header}>Workout Recommendations</Text>}
+          ListEmptyComponent={<Text style={styles.noDataText}>Egzersiz bulunamadı.</Text>}
+        />
+      ) : (
+        <Text style={styles.noDataText}>Lütfen önce BMI değerinizi kaydedin.</Text>
+      )}
     </SafeAreaView>
   );
 };

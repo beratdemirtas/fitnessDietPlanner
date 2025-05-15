@@ -7,7 +7,7 @@ const WorkoutDetailScreen = ({ route }) => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <ScrollView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>{exercise.name}</Text>
         <Image source={{ uri: exercise.gifUrl }} style={styles.image} />
         <View style={styles.details}>

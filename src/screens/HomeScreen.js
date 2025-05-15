@@ -5,11 +5,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const weeklyData = [3, 4, 5, 2, 7, 4, 3]; // Dummy data for bar chart
-
 const HomeScreen = ({ navigation }) => {
   const [weeklyActivity, setWeeklyActivity] = useState([]);
   const [userName, setUserName] = useState('');
+  const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
+  const [weeklyLabels, setWeeklyLabels] = useState(['', '', '', '', '', '', '']);
 
   useEffect(() => {
     AsyncStorage.getItem('userName').then(name => {
@@ -18,15 +18,24 @@ const HomeScreen = ({ navigation }) => {
     });
   }, []);
 
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const getThisWeekDays = () => {
+    const result = [];
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const today = new Date();
+    const monday = new Date(today);
+    const day = today.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
+    monday.setDate(today.getDate() + diff);
 
-  const getDayName = (dateString) => {
-    const date = new Date(dateString);
-    return days[(date.getDay() + 6) % 7]; // Pazartesi'yi haftanın ilk günü yapar
-  };
-
-  const sortDaysFromMonday = (activity) => {
-    return activity.sort((a, b) => days.indexOf(a.dayName) - days.indexOf(b.dayName));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      result.push({
+        date: d.toISOString().split('T')[0],
+        dayName: dayNames[i],
+      });
+    }
+    return result;
   };
 
   useFocusEffect(
@@ -35,21 +44,13 @@ const HomeScreen = ({ navigation }) => {
         try {
           const completedData = await AsyncStorage.getItem('completedExercises');
           const completed = completedData ? JSON.parse(completedData) : {};
-          const today = new Date();
-          const weekDays = Array.from({ length: 7 }, (_, i) => {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            return date.toISOString().split('T')[0];
-          });
+          const thisWeek = getThisWeekDays();
 
-          let activity = weekDays.map((day) => ({
-            date: day,
-            dayName: getDayName(day),
-            count: completed[day] ? completed[day].length : 0,
-          }));
+          const data = thisWeek.map(({ date }) => completed[date] ? completed[date].length : 0);
+          const labels = thisWeek.map(({ dayName }) => dayName);
 
-          activity = sortDaysFromMonday(activity);
-          setWeeklyActivity(activity);
+          setWeeklyData(data);
+          setWeeklyLabels(labels);
         } catch (error) {
           console.error('Aktivite verisi yüklenirken hata oluştu:', error);
         }
@@ -59,7 +60,6 @@ const HomeScreen = ({ navigation }) => {
     }, [])
   );
 
-  // Haftanın en aktif günü
   const maxIndex = weeklyData.indexOf(Math.max(...weeklyData));
 
   return (
@@ -100,7 +100,7 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.sectionTitle}>Weekly Stats</Text>
         <View style={styles.statsBox}>
           <Text style={styles.mostActiveText}>
-            Most Active: <Text style={{fontWeight: 'bold'}}>{days[maxIndex]}</Text>
+            Most Active: <Text style={{fontWeight: 'bold'}}>{weeklyLabels[maxIndex]}</Text>
           </Text>
           <View style={styles.barChartRow}>
             {weeklyData.map((val, idx) => (
@@ -109,11 +109,11 @@ const HomeScreen = ({ navigation }) => {
                   styles.bar,
                   {height: val * 15, backgroundColor: idx === maxIndex ? '#2d4d6a' : '#bcd4e6'}
                 ]}/>
-                <Text style={styles.barLabel}>{days[idx]}</Text>
-            </View>
-          ))}
+                <Text style={styles.barLabel}>{weeklyLabels[idx]}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </View>
       </ScrollView>
     </SafeAreaView>
   );
