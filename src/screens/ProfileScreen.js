@@ -159,6 +159,16 @@ export default function ProfileScreen() {
     }
   };
 
+  // BMI kategorisi fonksiyonu
+  const getBMICategory = (bmi) => {
+    if (!bmi) return '';
+    const val = parseFloat(bmi);
+    if (val < 18.5) return { label: 'Underweight', color: '#4FC3F7', icon: '🍃' };
+    if (val < 25) return { label: 'Normal', color: '#81C784', icon: '💪' };
+    if (val < 30) return { label: 'Overweight', color: '#FFD54F', icon: '🍔' };
+    return { label: 'Obese', color: '#E57373', icon: '⚠️' };
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -252,11 +262,20 @@ export default function ProfileScreen() {
                   <Text style={styles.infoLabel}>BMI:</Text>
                   <Text style={styles.infoValue}>{userData.bmi}</Text>
                 </View>
-                <View style={styles.bmiCategory}>
-                  <Text style={styles.bmiCategoryText}>
-                    {userData.bmi < 18.5 ? 'Underweight' :
-                     userData.bmi < 25 ? 'Normal weight' :
-                     userData.bmi < 30 ? 'Overweight' : 'Obese'}
+                <View style={styles.bmiBox}>
+                  <Text style={styles.bmiTitle}>BMI (Body Mass Index)</Text>
+                  <View style={styles.bmiValueRow}>
+                    <Text style={styles.bmiValue}>{userData.bmi}</Text>
+                    <Text style={styles.bmiIcon}>{getBMICategory(userData.bmi).icon}</Text>
+                  </View>
+                  <View style={[styles.bmiBadge, {backgroundColor: getBMICategory(userData.bmi).color}]}> 
+                    <Text style={styles.bmiBadgeText}>{getBMICategory(userData.bmi).label}</Text>
+                  </View>
+                  <Text style={styles.bmiDesc}>
+                    {getBMICategory(userData.bmi).label === 'Underweight' && 'You are under the normal weight. Consider a balanced diet.'}
+                    {getBMICategory(userData.bmi).label === 'Normal' && 'Your weight is in the healthy range. Keep it up!'}
+                    {getBMICategory(userData.bmi).label === 'Overweight' && 'You are above the normal weight. Consider more activity.'}
+                    {getBMICategory(userData.bmi).label === 'Obese' && 'You are in the obese range. Please consult a health professional.'}
                   </Text>
                 </View>
                 <View style={styles.buttonContainer}>
@@ -360,18 +379,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  bmiCategory: {
-    backgroundColor: '#32CD32',
-    padding: 15,
+  bmiBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
     marginHorizontal: 20,
     marginBottom: 20,
-    borderRadius: 8,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  bmiCategoryText: {
-    color: '#fff',
+  bmiTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 8,
+  },
+  bmiValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bmiValue: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#32CD32',
+    marginRight: 10,
+  },
+  bmiIcon: {
+    fontSize: 32,
+  },
+  bmiBadge: {
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  bmiBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  bmiDesc: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
   },
   buttonContainer: {
     padding: 20,

@@ -10,6 +10,7 @@ import WorkoutDetailScreen from './src/screens/WorkoutDetailScreen';
 import DietScreen from './src/screens/DietScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
+import MyMealsScreen from './src/screens/MyMealsScreen';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -80,6 +81,11 @@ export default function App() {
                 name="MealTracker" 
                 component={MealTrackerScreen}
                 options={{ title: 'Meal Tracker' }}
+              />
+              <Stack.Screen 
+                name="MyMeals" 
+                component={MyMealsScreen}
+                options={{ title: 'My Meals' }}
               />
               <Stack.Screen 
                 name="Workout" 
