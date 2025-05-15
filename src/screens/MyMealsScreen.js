@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
 const USDA_API_KEY = 'q73lnVjXeJ4Gp1bowe8yjT0fVgf7AbiNgZZi3A6Z';
 const USDA_API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
@@ -12,9 +13,15 @@ export default function MyMealsScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [favorites, setFavorites] = useState([]);
+  const [userEmail, setUserEmail] = useState('');
+  const [myMeals, setMyMeals] = useState([]);
 
   useEffect(() => {
-    loadFavorites();
+    AsyncStorage.getItem('userEmail').then(email => {
+      setUserEmail(email);
+      loadFavorites();
+      loadMyMeals(email);
+    });
   }, []);
 
   const handleSearch = async (text) => {
@@ -66,6 +73,34 @@ export default function MyMealsScreen() {
     await AsyncStorage.setItem('favoriteMeals', JSON.stringify(newFavs));
   };
 
+  const getMyMealsKey = (email) => `myMeals_${email}`;
+  const getMealsKey = (email, date) => `meals_${email}_${date}`;
+
+  const loadMyMeals = async (email) => {
+    if (!email) return;
+    const key = getMyMealsKey(email);
+    const data = await AsyncStorage.getItem(key);
+    setMyMeals(data ? JSON.parse(data) : []);
+  };
+
+  const handleConsume = async (meal) => {
+    if (!userEmail) return;
+    const today = new Date().toISOString().split('T')[0];
+    const key = getMealsKey(userEmail, today);
+    const prev = await AsyncStorage.getItem(key);
+    let meals = prev ? JSON.parse(prev) : [];
+    meals = [
+      {
+        ...meal,
+        time: new Date().toISOString(),
+        date: today,
+      },
+      ...meals
+    ];
+    await AsyncStorage.setItem(key, JSON.stringify(meals));
+    Alert.alert('Consumed', 'Meal added to today!');
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       <ScrollView style={styles.container}>
@@ -99,6 +134,37 @@ export default function MyMealsScreen() {
             })}
           </View>
         )}
+        <View style={styles.myMealsContainer}>
+          <Text style={styles.sectionTitle}>My Meals</Text>
+          {myMeals.length === 0 && <Text style={styles.infoText}>No saved meals yet.</Text>}
+          {myMeals.map(meal => (
+            <View key={meal.id} style={styles.mealCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <Text style={styles.mealName}>{meal.name}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity style={styles.consumeBtn} onPress={() => handleConsume(meal)}>
+                    <Text style={styles.consumeBtnText}>🍽️ Consume</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={async () => {
+                    const key = getMyMealsKey(userEmail);
+                    const updated = myMeals.filter(m => m.id !== meal.id);
+                    setMyMeals(updated);
+                    await AsyncStorage.setItem(key, JSON.stringify(updated));
+                  }}>
+                    <Text style={styles.deleteBtnText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
+              <View style={styles.mealMacrosRow}>
+                <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
+                <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
+                <Text style={styles.mealMacro}><Text style={styles.emoji}>🍞</Text> {meal.carbs}g</Text>
+              </View>
+              <Text style={styles.mealCalorie}>🔥 {meal.calories} kcal</Text>
+            </View>
+          ))}
+        </View>
         <View style={styles.favoritesContainer}>
           <Text style={styles.sectionTitle}>Favorites</Text>
           {favorites.length === 0 && <Text style={styles.infoText}>No favorites yet.</Text>}
@@ -132,6 +198,7 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#f5f5f5', borderRadius: 8, padding: 10, marginBottom: 8, fontSize: 16 },
   searchInput: { marginBottom: 16 },
   resultsContainer: { marginBottom: 32 },
+  myMealsContainer: { marginBottom: 24 },
   favoritesContainer: { marginBottom: 24 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8, color: '#222' },
   mealCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 18, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4, alignItems: 'center' },
@@ -142,4 +209,31 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 16 },
   mealCalorie: { fontSize: 15, color: '#888', marginBottom: 4 },
   deleteButton: { fontSize: 20, color: '#FF3B30', marginLeft: 8 },
+  consumeBtn: {
+    backgroundColor: '#32CD32',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    marginLeft: 8,
+  },
+  consumeBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  foodName: {
+    fontSize: 15,
+    color: '#444',
+    marginBottom: 4,
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  deleteBtn: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  deleteBtnText: {
+    fontSize: 20,
+    color: '#FF3B30',
+  },
 }); 

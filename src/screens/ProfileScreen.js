@@ -59,8 +59,20 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const updatedUser = await User.updateProfile(userData.email, editedData);
-      setUserData(updatedUser);
+      const response = await fetch('http://localhost:3001/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userData.email,
+          name: editedData.name,
+          surname: editedData.surname,
+          height: editedData.height,
+          weight: editedData.weight,
+          photo: editedData.photo,
+        }),
+      });
+      const data = await response.json();
+      setUserData(data.user);
       setEditing(false);
       Alert.alert('Success', 'Profile updated successfully');
     } catch (error) {

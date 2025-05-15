@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_URL = 'http://localhost:3001/api/meals'; // Gerekirse IP ile değiştir
+const API_URL = 'http://localhost:3001/api/meals'; // Gerekirse IP ile değiştirebiliriz burayı !!
 const USDA_API_KEY = 'q73lnVjXeJ4Gp1bowe8yjT0fVgf7AbiNgZZi3A6Z';
 const USDA_API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
 
@@ -261,120 +261,61 @@ export default function MealTrackerScreen() {
   // Eksik makro uyarısı
   const macroWarnings = macroList.filter(m => m.total < m.goal * 0.8).map(m => `You are below your ${m.label.toLowerCase()} goal!`);
 
-  // Seçili günün öğünlerini getir
-  useEffect(() => {
+  // Fetch meals for selected day from backend
+  const fetchMealsForDay = async () => {
     if (!userEmail) return;
     const dateStr = selectedDate.toISOString().split('T')[0];
-    fetch(`${API_URL}?userEmail=${userEmail}&date=${dateStr}`)
-      .then(res => res.json())
-      .then(data => setMealsForDay(data))
-      .catch(() => setMealsForDay([]));
-  }, [selectedDate, userEmail, meals]);
-
-  // Öğün ekleme fonksiyonu (saatli)
-  const handleAddMeal = async () => {
-    if (!mealName || !protein || !fat || !carbs || !calories) {
-      setError('Please fill in all fields.');
-      return;
-    }
-    if (isNaN(protein) || isNaN(fat) || isNaN(carbs) || isNaN(calories)) {
-      setError('Macro values must be numeric.');
-      return;
-    }
     try {
-      setLoading(true);
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userEmail,
-      name: mealName,
-          protein: Number(protein),
-          fat: Number(fat),
-          carbs: Number(carbs),
-          calories: Number(calories),
-          time: addMealTime.toISOString(),
-          date: selectedDate.toISOString().split('T')[0],
-        })
-      });
-      if (!res.ok) throw new Error('Failed to add meal');
-      setMealName(''); setProtein(''); setFat(''); setCarbs(''); setCalories('');
-      setShowAddMealModal(false);
-      fetchMeals(userEmail);
-      setError('');
-    } catch (e) {
-      setError('Failed to add meal.');
-    }
-    setLoading(false);
-  };
-
-  // Favori öğünden ekle
-  const addFavoriteToMeals = async (fav) => {
-    setMealName(fav.name);
-    setProtein(String(fav.protein));
-    setFat(String(fav.fat));
-    setCarbs(String(fav.carbs));
-    setCalories(String(fav.calories));
-    setShowAddMealModal(true);
-  };
-
-  // Yemek ismiyle API'den arama
-  const handleMealSearch = async (text) => {
-    setMealSearch(text);
-    setSelectedMeal(null);
-    setCustomMealName('');
-    if (text.length < 2) return setMealSearchResults([]);
-    setCreatingMealLoading(true);
-    try {
-      const url = `${USDA_API_URL}?query=${encodeURIComponent(text)}&api_key=${USDA_API_KEY}`;
-      const response = await fetch(url);
+      const response = await fetch(`${API_URL}?userEmail=${userEmail}&date=${dateStr}`);
       const data = await response.json();
-      if (data.foods && data.foods.length > 0) {
-        setMealSearchResults(data.foods.slice(0, 5));
-      } else {
-        setMealSearchResults([]);
-      }
+      setMealsForDay(data);
     } catch (e) {
-      setMealSearchResults([]);
+      setMealsForDay([]);
     }
-    setCreatingMealLoading(false);
   };
 
-  // Öğünü kaydet
-  const handleSaveCreatedMeal = async () => {
-    if (!selectedMeal || !customMealName) {
-      Alert.alert('Error', 'Please select a meal and enter a meal name.');
-      return;
-    }
-    const macros = extractMacros(selectedMeal);
+  useEffect(() => {
+    fetchMealsForDay();
+  }, [selectedDate, userEmail]);
+
+  // Add or consume meal (POST to backend)
+  const handleAddMeal = async (meal) => {
     try {
-      setLoading(true);
-      const res = await fetch(API_URL, {
+      await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userEmail,
-          name: customMealName,
-          protein: macros.protein,
-          fat: macros.fat,
-          carbs: macros.carbs,
-          calories: macros.calories,
-          time: new Date().toISOString(),
-          date: selectedDate.toISOString().split('T')[0],
-        })
+        body: JSON.stringify({ ...meal, userEmail })
       });
-      if (!res.ok) throw new Error('Failed to add meal');
-      setShowCreateMealModal(false);
-      setMealSearch('');
-      setMealSearchResults([]);
-      setSelectedMeal(null);
-      setCustomMealName('');
-      fetchMeals(userEmail);
-    } catch (e) {
-      Alert.alert('Error', 'Failed to save meal.');
-    }
-    setLoading(false);
+      fetchMealsForDay();
+    } catch (e) {}
   };
+
+  // Delete meal (DELETE to backend)
+  const handleDeleteMeal = async (id) => {
+    try {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      fetchMealsForDay();
+    } catch (e) {}
+  };
+
+  // Meals for this day listesi:
+  {mealsForDay.map(meal => (
+    <View key={meal._id || meal.id} style={styles.mealCard}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={styles.mealName}>{meal.name}</Text>
+        <TouchableOpacity onPress={() => handleDeleteMeal(meal._id)}>
+          <Text style={styles.deleteButton}>🗑️</Text>
+        </TouchableOpacity>
+      </View>
+      <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
+      <View style={styles.mealMacrosRow}>
+        <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
+        <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
+        <Text style={styles.mealMacro}><Text style={styles.emoji}>🍞</Text> {meal.carbs}g</Text>
+      </View>
+      <Text style={styles.mealCalorie}>🔥 {meal.calories} kcal</Text>
+    </View>
+  ))}
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -397,7 +338,7 @@ export default function MealTrackerScreen() {
             <View style={styles.progressBarBg}>
               <View style={[styles.progressBarFill, { width: `${Math.min(percent, 100)}%`, backgroundColor: macroBarColor(percent) }]} />
             </View>
-            <Text style={styles.macroPercent}>{percent}%</Text>
+            <Text style={styles.macroPercent}>{macro.total}g / {macro.goal}g</Text>
           </View>
         );
       })}
@@ -433,23 +374,6 @@ export default function MealTrackerScreen() {
           <Text style={styles.noMealsText}>No meals for this day.</Text>
         </View>
       )}
-      {mealsForDay.map(meal => (
-        <View key={meal._id || meal.id} style={styles.mealCard}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={styles.mealName}>{meal.name}</Text>
-            <Text style={styles.mealTime}>{meal.time ? new Date(meal.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</Text>
-            <TouchableOpacity onPress={() => confirmRemoveMeal(meal._id)}>
-              <Text style={styles.deleteButton}>️</Text>
-        </TouchableOpacity>
-          </View>
-          <View style={styles.mealMacrosRow}>
-            <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
-            <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
-            <Text style={styles.mealMacro}><Text style={styles.emoji}>🍞</Text> {meal.carbs}g</Text>
-          </View>
-          <Text style={styles.mealCalorie}>🔥 {meal.calories} kcal</Text>
-        </View>
-      ))}
     </ScrollView>
     <View style={styles.bottomButtonRow}>
       <TouchableOpacity style={styles.bottomBtn} onPress={() => setShowCreateMealModal(true)}>
@@ -482,9 +406,9 @@ export default function MealTrackerScreen() {
     <Modal visible={showCreateMealModal} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Öğün Oluştur</Text>
-          <TextInput style={styles.input} placeholder="Yemek ismi ara..." value={mealSearch} onChangeText={handleMealSearch} />
-          {creatingMealLoading && <Text style={styles.infoText}>Aranıyor...</Text>}
+          <Text style={styles.modalTitle}>Create Meal</Text>
+          <TextInput style={styles.input} placeholder="Search For Meal..." value={mealSearch} onChangeText={handleMealSearch} />
+          {creatingMealLoading && <Text style={styles.infoText}>Searching...</Text>}
           {mealSearchResults.length > 0 && (
             <View style={{width:'100%'}}>
               {mealSearchResults.map(food => (
@@ -497,23 +421,23 @@ export default function MealTrackerScreen() {
           )}
           {selectedMeal && (
             <View style={{width:'100%', marginTop:10}}>
-              <Text style={styles.inputLabel}>Öğün Adı</Text>
-              <TextInput style={styles.input} placeholder="(örn: Kahvaltı, Öğle Yemeği)" value={customMealName} onChangeText={setCustomMealName} />
-              <Text style={styles.inputLabel}>Seçilen Yemek Değerleri</Text>
+              <Text style={styles.inputLabel}>Meal Name</Text>
+              <TextInput style={styles.input} placeholder="(e.g. Breakfast, Lunch, Snack, Dinner)" value={customMealName} onChangeText={setCustomMealName} />
+              <Text style={styles.inputLabel}>Selected Meal Macros</Text>
               <Text style={styles.mealMacroSmall}>💪 {extractMacros(selectedMeal).protein}g  🥑 {extractMacros(selectedMeal).fat}g  🍞 {extractMacros(selectedMeal).carbs}g  🔥 {extractMacros(selectedMeal).calories} kcal</Text>
             </View>
           )}
           <TouchableOpacity style={styles.button} onPress={handleSaveCreatedMeal}>
-            <Text style={styles.buttonText}>Kaydet</Text>
+            <Text style={styles.buttonText}>SAVE</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.button, {backgroundColor:'#888'}]} onPress={() => setShowCreateMealModal(false)}>
-            <Text style={styles.buttonText}>İptal</Text>
+            <Text style={styles.buttonText}>CANCEL</Text>
           </TouchableOpacity>
         </View>
       </View>
     </Modal>
   </SafeAreaView>
-);
+  );
 }
 
 const styles = StyleSheet.create({

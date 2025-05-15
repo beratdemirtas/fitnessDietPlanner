@@ -30,7 +30,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch('http://localhost:3001/api/user/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -39,7 +39,7 @@ export default function LoginScreen() {
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
-      await AsyncStorage.setItem('userName', data.user.name);
+      await AsyncStorage.setItem('userEmail', email);
       await signIn(email);
     } catch (error) {
       Alert.alert('Error', error.message);
