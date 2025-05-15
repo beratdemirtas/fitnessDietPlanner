@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const USDA_API_KEY = 'q73lnVjXeJ4Gp1bowe8yjT0fVgf7AbiNgZZi3A6Z';
 const USDA_API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
@@ -101,16 +102,44 @@ export default function MyMealsScreen() {
     Alert.alert('Consumed', 'Meal added to today!');
   };
 
+  const handleFavorite = async (food) => {
+    const macros = extractMacros(food);
+    const favMeal = {
+      id: food.fdcId,
+      name: food.description,
+      protein: macros.protein,
+      fat: macros.fat,
+      carbs: macros.carbs,
+      calories: macros.calories,
+      portion: food.householdServingFullText || (food.servingSize && food.servingSizeUnit ? `${food.servingSize} ${food.servingSizeUnit}` : null)
+    };
+    if (favorites.some(f => f.id === favMeal.id)) return;
+    const newFavs = [favMeal, ...favorites];
+    setFavorites(newFavs);
+    await AsyncStorage.setItem('favoriteMeals', JSON.stringify(newFavs));
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
         <Text style={styles.header}>My Meals</Text>
-        <TextInput
-          style={[styles.input, styles.searchInput]}
-          placeholder="Search for a meal..."
-          value={search}
-          onChangeText={handleSearch}
-        />
+        <View style={{ position: 'relative', marginBottom: 16 }}>
+          <TextInput
+            style={[styles.input, styles.searchInput, { paddingRight: 32 }]}
+            placeholder="Search for a food..."
+            value={search}
+            onChangeText={handleSearch}
+            onBlur={() => { setSearch(''); setSearchResult(null); }}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity
+              onPress={() => { setSearch(''); setSearchResult(null); }}
+              style={{ position: 'absolute', right: 10, top: 0, bottom: 0, justifyContent: 'center', height: '100%' }}
+            >
+              <Ionicons name="close-circle" size={22} color="#bbb" />
+            </TouchableOpacity>
+          )}
+        </View>
         {loading && <Text style={styles.infoText}>Searching...</Text>}
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         {searchResult && searchResult.length > 0 && (
@@ -118,11 +147,21 @@ export default function MyMealsScreen() {
             <Text style={styles.sectionTitle}>Results</Text>
             {searchResult.map(food => {
               const macros = extractMacros(food);
-              const image = getFoodImage(food);
+              const servingInfo = food.householdServingFullText || (food.servingSize && food.servingSizeUnit ? `${food.servingSize} ${food.servingSizeUnit}` : null);
+              const isFav = favorites.some(f => f.id === food.fdcId);
               return (
                 <View key={food.fdcId} style={styles.mealCard}>
-                  <Image source={{ uri: image }} style={styles.foodImage} />
-                  <Text style={styles.mealName}>{food.description}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <Text style={styles.mealName}>{food.description}</Text>
+                    <TouchableOpacity onPress={() => handleFavorite(food)}>
+                      <Text style={{ fontSize: 22, color: isFav ? '#E57373' : '#bbb', marginLeft: 8 }}>
+                        {isFav ? '❤️' : '🤍'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  {servingInfo && (
+                    <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14, marginBottom: 2 }}>Portion: {servingInfo}</Text>
+                  )}
                   <View style={styles.mealMacrosRow}>
                     <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {macros.protein}g</Text>
                     <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {macros.fat}g</Text>
@@ -155,6 +194,12 @@ export default function MyMealsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+              {meal.portion && (
+                <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14, marginBottom: 2 }}>Portion: {meal.portion}</Text>
+              )}
+              {!meal.portion && (
+                <Text style={{ fontStyle: 'italic', color: '#bbb', fontSize: 14, marginBottom: 2 }}>Portion: Not specified</Text>
+              )}
               <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
               <View style={styles.mealMacrosRow}>
                 <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
@@ -166,16 +211,27 @@ export default function MyMealsScreen() {
           ))}
         </View>
         <View style={styles.favoritesContainer}>
-          <Text style={styles.sectionTitle}>Favorites</Text>
+          <Text style={styles.sectionTitle}>Favorite Foods</Text>
           {favorites.length === 0 && <Text style={styles.infoText}>No favorites yet.</Text>}
           {favorites.map(meal => (
             <View key={meal.id} style={styles.mealCard}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                 <Text style={styles.mealName}>{meal.name}</Text>
-                <TouchableOpacity onPress={() => removeFavorite(meal.id)}>
-                  <Text style={styles.deleteButton}>🗑️</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TouchableOpacity style={styles.consumeBtn} onPress={() => handleConsume(meal)}>
+                    <Text style={styles.consumeBtnText}>🍽️ Consume</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => removeFavorite(meal.id)}>
+                    <Text style={styles.deleteBtnText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+              {meal.portion && (
+                <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14, marginBottom: 2 }}>Portion: {meal.portion}</Text>
+              )}
+              {!meal.portion && (
+                <Text style={{ fontStyle: 'italic', color: '#bbb', fontSize: 14, marginBottom: 2 }}>Portion: Not specified</Text>
+              )}
               <View style={styles.mealMacrosRow}>
                 <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
                 <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
@@ -210,16 +266,22 @@ const styles = StyleSheet.create({
   mealCalorie: { fontSize: 15, color: '#888', marginBottom: 4 },
   deleteButton: { fontSize: 20, color: '#FF3B30', marginLeft: 8 },
   consumeBtn: {
-    backgroundColor: '#32CD32',
+    backgroundColor: '#4CAF50',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 16,
     marginLeft: 8,
+    shadowColor: '#388E3C',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   consumeBtnText: {
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 15,
+    letterSpacing: 0.5,
   },
   foodName: {
     fontSize: 15,

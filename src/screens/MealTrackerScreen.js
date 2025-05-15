@@ -258,7 +258,7 @@ export default function MealTrackerScreen() {
     { key: 'fat', label: 'Fat', icon: '🥑', total: totals.totalFat, goal: macroGoals.fat },
   ];
 
-  // Eksik makro uyarısı
+  // Eksik makro uyarısı veriyor burası
   const macroWarnings = macroList.filter(m => m.total < m.goal * 0.8).map(m => `You are below your ${m.label.toLowerCase()} goal!`);
 
   // Fetch meals for selected day from backend
@@ -278,7 +278,7 @@ export default function MealTrackerScreen() {
     fetchMealsForDay();
   }, [selectedDate, userEmail]);
 
-  // Add or consume meal (POST to backend)
+  // consume meal (POST to backend)
   const handleAddMeal = async (meal) => {
     try {
       await fetch(API_URL, {
@@ -316,6 +316,62 @@ export default function MealTrackerScreen() {
       <Text style={styles.mealCalorie}>🔥 {meal.calories} kcal</Text>
     </View>
   ))}
+
+  const handleMealSearch = async (text) => {
+    setMealSearch(text);
+    setMealSearchResults([]);
+    setError('');
+    if (text.length < 2) return;
+    setCreatingMealLoading(true);
+    try {
+      const url = `${USDA_API_URL}?query=${encodeURIComponent(text)}&api_key=${USDA_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.foods && data.foods.length > 0) {
+        setMealSearchResults(data.foods.slice(0, 5));
+      } else {
+        setMealSearchResults([]);
+        setError('No results found.');
+      }
+    } catch (e) {
+      setError('API error occurred.');
+    }
+    setCreatingMealLoading(false);
+  };
+
+  const handleSaveCreatedMeal = async () => {
+    if (!selectedMeal) {
+      setError('Please select a meal.');
+      return;
+    }
+    const macros = extractMacros(selectedMeal);
+    const mealToSave = {
+      userEmail,
+      name: customMealName || selectedMeal.description,
+      protein: macros.protein,
+      fat: macros.fat,
+      carbs: macros.carbs,
+      calories: macros.calories,
+      date: selectedDate.toISOString().split('T')[0],
+    };
+    try {
+      setCreatingMealLoading(true);
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mealToSave),
+      });
+      setShowCreateMealModal(false);
+      setSelectedMeal(null);
+      setCustomMealName('');
+      setMealSearch('');
+      setMealSearchResults([]);
+      fetchMealsForDay();
+    } catch (e) {
+      setError('Failed to save meal.');
+    }
+    setCreatingMealLoading(false);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -411,12 +467,27 @@ export default function MealTrackerScreen() {
           {creatingMealLoading && <Text style={styles.infoText}>Searching...</Text>}
           {mealSearchResults.length > 0 && (
             <View style={{width:'100%'}}>
-              {mealSearchResults.map(food => (
-                <TouchableOpacity key={food.fdcId} style={[styles.mealSearchResult, selectedMeal && selectedMeal.fdcId === food.fdcId && {backgroundColor:'#eaf3ef'}]} onPress={() => setSelectedMeal(food)}>
-                  <Text style={styles.mealName}>{food.description}</Text>
-                  <Text style={styles.mealMacroSmall}>💪 {extractMacros(food).protein}g  🥑 {extractMacros(food).fat}g  🍞 {extractMacros(food).carbs}g  🔥 {extractMacros(food).calories} kcal</Text>
-                </TouchableOpacity>
-              ))}
+              {mealSearchResults.map(food => {
+                const isFav = favorites.some(f => f.id === food.fdcId);
+                return (
+                  <TouchableOpacity key={food.fdcId} style={[styles.mealSearchResult, selectedMeal && selectedMeal.fdcId === food.fdcId && {backgroundColor:'#eaf3ef'}]} onPress={() => setSelectedMeal(food)}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.mealName}>{food.description}</Text>
+                        {(food.householdServingFullText || (food.servingSize && food.servingSizeUnit)) && (
+                          <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14, marginBottom: 2 }}>
+                            Portion: {food.householdServingFullText || `${food.servingSize} ${food.servingSizeUnit}`}
+                          </Text>
+                        )}
+                        <Text style={styles.mealMacroSmall}>💪 {extractMacros(food).protein}g  🥑 {extractMacros(food).fat}g  🍞 {extractMacros(food).carbs}g  🔥 {extractMacros(food).calories} kcal</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => handleFavorite(food)} style={{ marginLeft: 8 }}>
+                        <Text style={{ fontSize: 22, color: isFav ? '#E57373' : '#bbb' }}>{isFav ? '❤️' : '🤍'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
           {selectedMeal && (
