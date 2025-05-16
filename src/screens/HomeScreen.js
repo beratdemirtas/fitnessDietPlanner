@@ -107,7 +107,7 @@ const HomeScreen = ({ navigation }) => {
               <View key={idx} style={styles.barItem}>
                 <View style={[
                   styles.bar,
-                  {height: val * 15, backgroundColor: idx === maxIndex ? '#2d4d6a' : '#bcd4e6'}
+                  {height: val * 14, backgroundColor: idx === maxIndex ? '#2d4d6a' : '#bcd4e6'}
                 ]}/>
                 <Text style={styles.barLabel}>{weeklyLabels[idx]}</Text>
               </View>
