@@ -1,219 +1,491 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  Image,
+  ActivityIndicator,
   TouchableOpacity,
-  Modal,
-  FlatList,
-} from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import BMICalculator from "../components/BMICalculator";
+  TextInput,
+  Alert,
+  ScrollView
+} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuthContext } from '../../App';
 
-const ProfileScreen = () => {
-  const [height, setHeight] = useState();
-  const [weight, setWeight] = useState();
-  const [gender, setGender] = useState();
-  const [bmi, setBmi] = useState(null);
+const API_URL = 'http://localhost:3001/api/user/profile';
+const LOGIN_URL = 'http://localhost:3001/api/user/login';
+const UPDATE_URL = 'http://localhost:3001/api/user/profile';
+const DELETE_URL = 'http://localhost:3001/api/user/profile';
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [currentSelection, setCurrentSelection] = useState(null);
-  const [selectionList, setSelectionList] = useState([]);
-
-  const saveData = async () => {
-    try {
-      const calculatedBmi = handleCalculateBMI();
-      if (calculatedBmi === null) {
-        alert("Lütfen boy ve kilo bilgilerini giriniz.");
-        return;
-      }
-      const userData = { height, weight, gender, bmi: calculatedBmi };
-      await AsyncStorage.setItem("userProfile", JSON.stringify(userData));
-      alert("Bilgiler Kaydedildi!");
-      setBmi(calculatedBmi);
-    } catch (error) {
-      console.error("Veri kaydedilirken hata oluştu:", error);
-    }
-  };
-
-  const handleCalculateBMI = () => {
-    if (!height || !weight) return null;
-
-    const heightInMeters = parseFloat(height) / 100;
-    const parsedWeight = parseFloat(weight);
-
-    if (isNaN(heightInMeters) || isNaN(parsedWeight) || heightInMeters === 0) {
-      return null;
-    }
-
-    const calculatedBmi = parsedWeight / (heightInMeters * heightInMeters);
-    return calculatedBmi.toFixed(2);
-  };
+export default function ProfileScreen() {
+  const { signOut } = useContext(AuthContext);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editedData, setEditedData] = useState(null);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const navigation = useNavigation();
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const storedData = await AsyncStorage.getItem("userProfile");
-        if (storedData) {
-          const parsedData = JSON.parse(storedData);
-          setHeight(parsedData.height);
-          setWeight(parsedData.weight);
-          setGender(parsedData.gender);
-          setBmi(parsedData.bmi);
-        }
-      } catch (error) {
-        console.error("Veri yüklenirken hata oluştu:", error);
-      }
-    };
-    loadData();
+    loadUserData();
   }, []);
 
-  const openModal = (type) => {
-    setCurrentSelection(type);
-    if (type === "height") {
-      setSelectionList(Array.from({ length: 71 }, (_, i) => (140 + i).toString()));
-    } else if (type === "weight") {
-      setSelectionList(Array.from({ length: 221 }, (_, i) => (30 + i).toString()));
-    } else if (type === "gender") {
-      setSelectionList(["Erkek", "Kadın"]);
+  const loadUserData = async () => {
+    try {
+      const userEmail = await AsyncStorage.getItem('userEmail');
+      if (userEmail) {
+        const response = await fetch(`${API_URL}?email=${userEmail}`);
+        const data = await response.json();
+        setUserData(data);
+        setEditedData(data);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      Alert.alert('Error', 'Failed to load user data');
+    } finally {
+      setLoading(false);
     }
-    setModalVisible(true);
   };
 
-  const selectValue = (value) => {
-    if (currentSelection === "height") setHeight(value);
-    if (currentSelection === "weight") setWeight(value);
-    if (currentSelection === "gender") setGender(value);
-    setModalVisible(false);
+  const handleEdit = () => {
+    setEditing(true);
   };
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:3001/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: userData.email,
+          name: editedData.name,
+          surname: editedData.surname,
+          height: editedData.height,
+          weight: editedData.weight,
+          photo: editedData.photo,
+        }),
+      });
+      const data = await response.json();
+      setUserData(data.user);
+      setEditing(false);
+      Alert.alert('Success', 'Profile updated successfully');
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    Alert.alert(
+      'Delete Profile',
+      'Are you sure you want to delete your profile? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await User.deleteProfile(userData.email);
+              await AsyncStorage.removeItem('userEmail');
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (error) {
+              Alert.alert('Error', error.message);
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        setEditedData(prev => ({
+          ...prev,
+          photo: result.assets[0].uri
+        }));
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const handleProfileLogin = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(LOGIN_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      await AsyncStorage.setItem('userEmail', loginEmail);
+      await loadUserData();
+      
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setUserData(null);
+      setEditedData(null);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to logout');
+    }
+  };
+
+  // BMI kategorisi fonksiyonu
+  const getBMICategory = (bmi) => {
+    if (!bmi) return '';
+    const val = parseFloat(bmi);
+    if (val < 18.5) return { label: 'Underweight', color: '#4FC3F7', icon: '🍃' };
+    if (val < 25) return { label: 'Normal', color: '#81C784', icon: '💪' };
+    if (val < 30) return { label: 'Overweight', color: '#FFD54F', icon: '🍔' };
+    return { label: 'Obese', color: '#E57373', icon: '⚠️' };
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#32CD32" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>No user data found</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Profil Bilgilerini Gir</Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
+        {userData ? (
+          <>
+            <TouchableOpacity style={styles.photoContainer} onPress={editing ? pickImage : null}>
+              <Image source={{ uri: editedData.photo }} style={styles.profileImage} />
+              {editing && <Text style={styles.editPhotoText}>Tap to change photo</Text>}
+            </TouchableOpacity>
 
-      <Text style={styles.label}>Boy Seç (cm):</Text>
-      <TouchableOpacity style={styles.selectionBox} onPress={() => openModal("height")}>
-        <Text style={styles.selectionText}>{height ? `${height} cm` : "Seçiniz"}</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.label}>Kilo Seç (kg):</Text>
-      <TouchableOpacity style={styles.selectionBox} onPress={() => openModal("weight")}>
-        <Text style={styles.selectionText}>{weight ? `${weight} kg` : "Seçiniz"}</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.label}>Cinsiyet Seç:</Text>
-      <TouchableOpacity style={styles.selectionBox} onPress={() => openModal("gender")}>
-        <Text style={styles.selectionText}>{gender || "Seçiniz"}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.saveButton} onPress={saveData}>
-        <Text style={styles.saveButtonText}>Kaydet</Text>
-      </TouchableOpacity>
-
-      <BMICalculator bmi={bmi} />
-
-      <Modal animationType="slide" transparent={true} visible={modalVisible}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <FlatList
-              data={selectionList}
-              keyExtractor={(item) => item.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.modalItem} onPress={() => selectValue(item)}>
-                  <Text style={styles.modalItemText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-              style={{ maxHeight: 250 }}
+            {editing ? (
+              <>
+                <TextInput
+                  style={styles.input}
+                  value={editedData.name}
+                  onChangeText={(text) => setEditedData(prev => ({ ...prev, name: text }))}
+                  placeholder="Name"
+                />
+                <TextInput
+                  style={styles.input}
+                  value={editedData.surname}
+                  onChangeText={(text) => setEditedData(prev => ({ ...prev, surname: text }))}
+                  placeholder="Surname"
+                />
+                <TextInput
+                  style={styles.input}
+                  value={editedData.height}
+                  onChangeText={(text) => setEditedData(prev => ({ ...prev, height: text }))}
+                  placeholder="Height (cm)"
+                  keyboardType="numeric"
+                />
+                <TextInput
+                  style={styles.input}
+                  value={editedData.weight}
+                  onChangeText={(text) => setEditedData(prev => ({ ...prev, weight: text }))}
+                  placeholder="Weight (kg)"
+                  keyboardType="numeric"
+                />
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={handleSave}>
+                    <Text style={styles.buttonText}>Save Changes</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => {
+                    setEditing(false);
+                    setEditedData(userData);
+                  }}>
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleDelete}>
+                    <Text style={styles.buttonText}>Delete Profile</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.name}>{userData.name} {userData.surname}</Text>
+                <Text style={styles.email}>{userData.email}</Text>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.infoLabel}>Gender:</Text>
+                  <Text style={styles.infoValue}>{userData.gender}</Text>
+                </View>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.infoLabel}>Birth Date:</Text>
+                  <Text style={styles.infoValue}>{userData.birthDate}</Text>
+                </View>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.infoLabel}>Height:</Text>
+                  <Text style={styles.infoValue}>{userData.height} cm</Text>
+                </View>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.infoLabel}>Weight:</Text>
+                  <Text style={styles.infoValue}>{userData.weight} kg</Text>
+                </View>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.infoLabel}>BMI:</Text>
+                  <Text style={styles.infoValue}>{userData.bmi}</Text>
+                </View>
+                <View style={styles.bmiBox}>
+                  <Text style={styles.bmiTitle}>BMI (Body Mass Index)</Text>
+                  <View style={styles.bmiValueRow}>
+                    <Text style={styles.bmiValue}>{userData.bmi}</Text>
+                    <Text style={styles.bmiIcon}>{getBMICategory(userData.bmi).icon}</Text>
+                  </View>
+                  <View style={[styles.bmiBadge, {backgroundColor: getBMICategory(userData.bmi).color}]}> 
+                    <Text style={styles.bmiBadgeText}>{getBMICategory(userData.bmi).label}</Text>
+                  </View>
+                  <Text style={styles.bmiDesc}>
+                    {getBMICategory(userData.bmi).label === 'Underweight' && 'You are under the normal weight. Consider a balanced diet.'}
+                    {getBMICategory(userData.bmi).label === 'Normal' && 'Your weight is in the healthy range. Keep it up!'}
+                    {getBMICategory(userData.bmi).label === 'Overweight' && 'You are above the normal weight. Consider more activity.'}
+                    {getBMICategory(userData.bmi).label === 'Obese' && 'You are in the obese range. Please consult a health professional.'}
+                  </Text>
+                </View>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity style={[styles.button, styles.editButton]} onPress={handleEdit}>
+                    <Text style={styles.buttonText}>Edit Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleLogout}>
+                    <Text style={styles.buttonText}>Logout</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </>
+        ) : (
+          <View style={styles.loginRegisterContainer}>
+            <Text style={styles.sectionTitle}>Login or Register</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={loginEmail}
+              onChangeText={setLoginEmail}
+              autoCapitalize="none"
             />
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Kapat</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={loginPassword}
+              onChangeText={setLoginPassword}
+              secureTextEntry
+            />
+            <TouchableOpacity style={styles.button} onPress={handleProfileLogin}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text style={styles.linkText}>Don't have an account? Register</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
-    padding: 20,
-    justifyContent: "center",
+    backgroundColor: '#eaf3ef',
   },
-  header: {
+  photoContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  profileImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    marginBottom: 10,
+  },
+  editPhotoText: {
+    color: '#32CD32',
+    fontSize: 14,
+    marginTop: 5,
+  },
+  name: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#2D9CDB",
-    textAlign: "center",
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 5,
+    color: '#222',
+  },
+  email: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
     marginBottom: 20,
   },
-  label: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  selectionBox: {
-    backgroundColor: "#E5E5E5",
-    padding: 12,
+  input: {
+    backgroundColor: '#fff',
+    padding: 15,
     borderRadius: 8,
+    marginHorizontal: 20,
     marginBottom: 10,
-    alignItems: "center",
-  },
-  selectionText: {
-    fontSize: 18,
-    color: "#2D9CDB",
-  },
-  saveButton: {
-    backgroundColor: "#27AE60",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 20,
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    backgroundColor: "white",
-    width: 300,
-    borderRadius: 10,
-    padding: 20,
-    alignItems: "center",
-    maxHeight: 350,
-  },
-  modalItem: {
-    paddingVertical: 10,
-    width: "100%",
-    alignItems: "center",
-  },
-  modalItemText: {
-    fontSize: 18,
-    color: "#333",
-  },
-  closeButton: {
-    backgroundColor: "#E74C3C",
-    paddingVertical: 10,
-    width: "100%",
-    alignItems: "center",
-    marginTop: 10,
-    borderRadius: 5,
-  },
-  closeButtonText: {
-    color: "white",
     fontSize: 16,
   },
+  infoContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    padding: 15,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    borderRadius: 8,
+  },
+  infoLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  infoValue: {
+    flex: 1,
+    fontSize: 16,
+    color: '#666',
+  },
+  bmiBox: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  bmiTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 8,
+  },
+  bmiValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bmiValue: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#32CD32',
+    marginRight: 10,
+  },
+  bmiIcon: {
+    fontSize: 32,
+  },
+  bmiBadge: {
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  bmiBadgeText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  bmiDesc: {
+    color: '#666',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  buttonContainer: {
+    padding: 20,
+  },
+  button: {
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  editButton: {
+    backgroundColor: '#32CD32',
+  },
+  saveButton: {
+    backgroundColor: '#32CD32',
+  },
+  cancelButton: {
+    backgroundColor: '#666',
+  },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  loginRegisterContainer: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    color: '#222',
+  },
+  linkText: {
+    color: '#32CD32',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 10,
+  },
 });
-
-export default ProfileScreen;

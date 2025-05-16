@@ -2,46 +2,80 @@
   {
     "id": "101",
     "name": "Push-up",
-    "bodyPart": "chest",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/pushup.gif",
-    "target": "pectorals",
+    "equipment": "Bodyweight",
+    "thumbnail": "push-up.jpg",
+    "video":"push-up.mp4",
+    "sets": "3-5 x 2",
+    "target": "Chest(pectoral), Triceps",
+    "howTo":[
+    "1- Place your hands firmly on the ground, directly under shoulders.",
+    "2- Flatten your back so your entire body is straight and slowly lower your body.",
+    "3- Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4- Exhale as you push back to the starting position."
+  ],
     "category": "zayif"
   },
   {
     "id": "102",
     "name": "Bodyweight Squat",
-    "bodyPart": "legs",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/squat.gif",
-    "target": "quadriceps",
+    "equipment": "Bodyweight",
+    "thumbnail": "bodyweightSquat.jpg",
+    "video":"bodyweightSquat.mp4",
+    "sets":"3-5 x 3",
+    "target": "Legs(quadriceps), Glutes",
+    "howTo":[
+    "1- Stand with your feet shoulder width apart.",
+    "2- Flex your knees and hips and sit back into the squat while lowering your bod.",
+    "3- Continue down to full depth.",
+    "4- Return to starting position."
+  ],
     "category": "zayif"
   },
   {
     "id": "103",
-    "name": "Superman Hold",
-    "bodyPart": "back",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/superman.gif",
-    "target": "lower back",
+    "name": "Kickbacks",
+    "equipment": "Bodyweight",
+    "thumbnail":"kickbacks.jpg",
+    "video":"kickbacks.mp4",
+    "sets":"8-12 x 2",
+    "target": "Legs(hamstrings)",
+    "howTo":[
+    "1- Get down on all fours and position your hands under your shoulders and your knees under your hips.",
+    "2- Kick back with one leg and squeeze your glutes.",
+    "3- Slowly return to starting position by bending your knee and lowering your leg.",
+    "4- Switch Legs. Repeat."
+  ],
     "category": "zayif"
   },
   {
     "id": "104",
     "name": "Dumbbell Curl",
-    "bodyPart": "arms",
-    "equipment": "dumbbell",
-    "gifUrl": "https://example.com/dumbbellcurl.gif",
+    "equipment": "Dumbbell",
+    "thumbnail": "dumbbellCurl.png",
+    "video":"dumbbellCurl.mp4",
     "target": "biceps",
+    "sets":"8-12 x 3",
+    "howTo":[
+    "1- Stand up straight with a dumbbell in each hand at arm's length.",
+    "2- Raise one dumbbell and twist your forearm until it is vertical and your palm faces the shoulder.",
+    "3- Lower to original position and repeat with opposite arm."
+  ],
     "category": "zayif"
   },
   {
     "id": "105",
     "name": "Bench Dips",
-    "bodyPart": "arms",
     "equipment": "body weight",
-    "gifUrl": "https://example.com/benchdips.gif",
+    "thumbnail":"benchDips.png",
+    "video":"benchDips.mp4",
     "target": "triceps",
+    "sets":"3-5 x 3",
+    "howTo":[
+    "1- Grip the edge of the bench with your hands, Keep your feet together and legs straight.",
+    "2- Lower your body straight down.",
+    "3- Slowly press back up to the starting point.",
+    "4- TIP: Make this harder by raising your feet off the floor and adding weight."
+  ],
     "category": "zayif"
   },
 
@@ -52,6 +86,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/jumpingjacks.gif",
     "target": "full body",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "normal"
   },
   {
@@ -61,6 +101,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/lunges.gif",
     "target": "glutes",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "normal"
   },
   {
@@ -70,6 +116,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/plank.gif",
     "target": "abs",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "normal"
   },
   {
@@ -79,6 +131,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/mountainclimbers.gif",
     "target": "abs",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "normal"
   },
   {
@@ -88,6 +146,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/burpees.gif",
     "target": "full body",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "normal"
   },
 
@@ -98,6 +162,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/walking.gif",
     "target": "legs",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "fazla_kilolu"
   },
   {
@@ -107,6 +177,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/wallpushup.gif",
     "target": "pectorals",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "fazla_kilolu"
   },
   {
@@ -116,6 +192,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/legextension.gif",
     "target": "quadriceps",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "fazla_kilolu"
   },
   {
@@ -125,6 +207,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/steptouch.gif",
     "target": "legs",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "fazla_kilolu"
   },
   {
@@ -134,6 +222,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/seatedarmraises.gif",
     "target": "delts",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "fazla_kilolu"
   },
 
@@ -144,6 +238,12 @@
     "equipment": "chair",
     "gifUrl": "https://example.com/chairmarch.gif",
     "target": "legs",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "obez"
   },
   {
@@ -153,6 +253,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/armcircles.gif",
     "target": "shoulders",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "obez"
   },
   {
@@ -162,6 +268,12 @@
     "equipment": "chair",
     "gifUrl": "https://example.com/sidebends.gif",
     "target": "obliques",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "obez"
   },
   {
@@ -171,6 +283,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/marching.gif",
     "target": "legs",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "obez"
   },
   {
@@ -180,6 +298,12 @@
     "equipment": "body weight",
     "gifUrl": "https://example.com/kneelifts.gif",
     "target": "abs",
+    "howTo":[
+    "1.Place your hands firmly on the ground, directly under shoulders.",
+    "2.Flatten your back so your entire body is straight and slowly lower your body.",
+    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
+    "4.Exhale as you push back to the starting position."
+  ],
     "category": "obez"
   }
 ]
