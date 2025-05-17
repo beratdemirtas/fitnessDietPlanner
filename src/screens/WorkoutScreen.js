@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, ScrollView }
 import exercisesData from '../../assets/data/exercises.json';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import exerciseImages from '../assets/exerciseImages';
 
 const WorkoutScreen = ({ navigation }) => {
   const [exercises, setExercises] = useState([]);
@@ -103,10 +103,13 @@ const WorkoutScreen = ({ navigation }) => {
       style={styles.card}
       onPress={() => navigation.navigate('WorkoutDetail', { exercise: item })}
     >
-      <Image source={{ uri: item.gifUrl }} style={styles.image} />
+      <Image
+        source={exerciseImages[item.thumbnail]}
+        style={styles.image}
+      />
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{item.name}</Text>
-        <Text style={styles.subtitle}>Ekipman: {item.equipment}</Text>
+        <Text style={styles.subtitle}>{item.sets} Sets</Text>
       </View>
       <TouchableOpacity
         style={[
@@ -149,7 +152,7 @@ const WorkoutScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1, padding: 10 },
   header: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
   card: {
     flexDirection: 'row',
@@ -159,7 +162,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     alignItems: 'center',
   },
-  image: { width: 80, height: 80, marginRight: 10 },
+  image: { width: 120, height: 100, marginRight: 10, borderRadius: 10, resizeMode: 'cover' },
   title: { fontSize: 16, fontWeight: 'bold' },
   subtitle: { fontSize: 14, color: 'gray' },
   completeButton: {
