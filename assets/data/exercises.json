@@ -1,7 +1,7 @@
 [
   {
     "id": "101",
-    "name": "Push-up",
+    "name": "Push Up",
     "equipment": "Bodyweight",
     "thumbnail": "push-up.jpg",
     "video":"push-up.mp4",
@@ -29,7 +29,7 @@
     "3- Continue down to full depth.",
     "4- Return to starting position."
   ],
-    "category": "zayif"
+    "category": ["zayif", "fazla_kilolu"]
   },
   {
     "id": "103",
@@ -45,7 +45,7 @@
     "3- Slowly return to starting position by bending your knee and lowering your leg.",
     "4- Switch Legs. Repeat."
   ],
-    "category": "zayif"
+    "category": ["zayif", "obez"]
   },
   {
     "id": "104",
@@ -53,7 +53,7 @@
     "equipment": "Dumbbell",
     "thumbnail": "dumbbellCurl.png",
     "video":"dumbbellCurl.mp4",
-    "target": "biceps",
+    "target": "Biceps",
     "sets":"8-12 x 3",
     "howTo":[
     "1- Stand up straight with a dumbbell in each hand at arm's length.",
@@ -65,10 +65,10 @@
   {
     "id": "105",
     "name": "Bench Dips",
-    "equipment": "body weight",
+    "equipment": "Bodyweight",
     "thumbnail":"benchDips.png",
     "video":"benchDips.mp4",
-    "target": "triceps",
+    "target": "Triceps",
     "sets":"3-5 x 3",
     "howTo":[
     "1- Grip the edge of the bench with your hands, Keep your feet together and legs straight.",
@@ -81,229 +81,140 @@
 
   {
     "id": "201",
-    "name": "Jumping Jacks",
-    "bodyPart": "cardio",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/jumpingjacks.gif",
-    "target": "full body",
+    "name": "Forward Lunges",
+    "equipment": "Bodyweight",
+    "thumbnail": "forwardLunges.jpg",
+    "video":"forwardLunges.mp4",
+    "target": "Legs(quadriceps), Glutes",
+    "sets":"3-5 x 3",
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Step forward with one leg.",
+    "2- Lower your body until your rear knee nearly touches the ground.",
+    "3- Ensure you remain upright, and your front knee stay above the front foot.",
+    "4- Push off the floor with your front foot until you return to the starting position. Switch legs."
   ],
-    "category": "normal"
+    "category": ["normal", "obez"]
   },
   {
     "id": "202",
-    "name": "Lunges",
-    "bodyPart": "legs",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/lunges.gif",
-    "target": "glutes",
+    "name": "Decline Push Up",
+    "equipment": "Bodyweight",
+    "thumbnail": "declinePushUp.jpg",
+    "video":"declinePushUp.mp4",
+    "target": "Chest(pectoral), Triceps",
+    "sets":"3-5 x 2",
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Use a bench to elevate your feet.",
+    "2- Put your hands slightly wider than shoulder-width.",
+    "3- Slowly lower your body until your chest almost touches the ground",
+    "4- Raise your body until you almost lock your elbows."
   ],
     "category": "normal"
   },
   {
     "id": "203",
-    "name": "Plank",
-    "bodyPart": "core",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/plank.gif",
-    "target": "abs",
+    "name": "Dumbbell Lateral Raise",
+    "equipment": "Dumbbell",
+    "thumbnail": "dumbbellLateralRaise.jpg",
+    "video":"dumbbellLateralRaise.mp4",
+    "target": "Shoulder",
+    "sets":"8-12 x 3",
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Stand up straight with dumbbells at either side, palms facing your hips.",
+    "2- Raise your arms on either side with a slight bend in your elbow until they are parallel with the floor. Pause at the top of the motion.",
+    "3- Slowly return your arms down to starting position."
   ],
-    "category": "normal"
+    "category": ["normal","fazla_kilolu"]
   },
   {
     "id": "204",
-    "name": "Mountain Climbers",
-    "bodyPart": "core",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/mountainclimbers.gif",
-    "target": "abs",
+    "name": "Elbow Side Plank",
+    "equipment": "Bodyweight",
+    "thumbnail":"elbowSidePlank.jpg",
+    "video":"elbowSidePlank.mp4",
+    "target": "Obliques",
+    "sets":"15s x 3",   
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Press your elbow into the floor.",
+    "2- Pick your hips up off the ground and maintain this position for the allotted amount of time.",
+    "3- Make sure you don't let your chest fall forward or backward."
   ],
     "category": "normal"
   },
   {
     "id": "205",
-    "name": "Burpees",
-    "bodyPart": "full body",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/burpees.gif",
-    "target": "full body",
+    "name": "Dumbbell Row",
+    "equipment": "Dumbbell",
+    "thumbnail": "dumbbellRow.jpg",
+    "video":"dumbbellRow.mp4",
+    "target": "Rear Deltoids, Back, Biceps",
+    "sets":"8-12 x 3",    
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Grab both dumbbells and hinge forward at the hips. Make sure you keep a flat back.",
+    "2- The closer your torso is to parallel with the ground the longer the range of motion will be at your shoulder. The better the results you'll get from the exercise.",
+    "3- Let your arms hang freely, and then pull your elbow joint straight back toward the ceiling."
   ],
-    "category": "normal"
+    "category": ["normal", "fazla_kilolu"]
   },
 
   {
     "id": "301",
-    "name": "Walking",
-    "bodyPart": "cardio",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/walking.gif",
-    "target": "legs",
+    "name": "Knee Push Up",
+    "equipment": "Bodyweight",
+    "thumbnail": "kneePushUp.jpg",
+    "video":"kneePushUp.mp4",
+    "target": "Chest(pectoral), Triceps",   
+    "sets": "3-5 x 3",
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
-  ],
-    "category": "fazla_kilolu"
-  },
-  {
-    "id": "302",
-    "name": "Wall Push-up",
-    "bodyPart": "chest",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/wallpushup.gif",
-    "target": "pectorals",
-    "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
-  ],
-    "category": "fazla_kilolu"
-  },
-  {
-    "id": "303",
-    "name": "Seated Leg Extension",
-    "bodyPart": "legs",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/legextension.gif",
-    "target": "quadriceps",
-    "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
-  ],
-    "category": "fazla_kilolu"
-  },
-  {
-    "id": "304",
-    "name": "Step Touch",
-    "bodyPart": "cardio",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/steptouch.gif",
-    "target": "legs",
-    "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
-  ],
-    "category": "fazla_kilolu"
-  },
-  {
-    "id": "305",
-    "name": "Seated Arm Raises",
-    "bodyPart": "shoulders",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/seatedarmraises.gif",
-    "target": "delts",
-    "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Begin in a push-up position on your knees. Break at the elbow and shoulder joint.",
+    "2- Lower your body, keeping elbows close.",
+    "3- Push back up to the starting position."
   ],
     "category": "fazla_kilolu"
   },
 
   {
     "id": "401",
-    "name": "Chair Marches",
-    "bodyPart": "cardio",
-    "equipment": "chair",
-    "gifUrl": "https://example.com/chairmarch.gif",
-    "target": "legs",
+    "name": "Arm Circle",
+    "equipment": "Bodyweight",
+    "thumbnail": "armCircle.jpg",
+    "video":"armCircle.mp4",
+    "target": "Shoulder",
+    "sets":"15s x 3",
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Hold your arms out to your sides.",
+    "2- Rotate your arms backwards in small circles."
   ],
     "category": "obez"
   },
   {
     "id": "402",
-    "name": "Arm Circles",
+    "name": "Wall Sit",
     "bodyPart": "arms",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/armcircles.gif",
-    "target": "shoulders",
+    "equipment": "Bodyweight",
+    "thumbnail": "wallSit.jpg",
+    "video":"wallSit.mp4",
+    "target": "Legs(quadriceps), Glutes, Core",
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Press your back against a wall, feet shoulder-width apart.",
+    "2- Lower into a squat position, thighs parallel to the floor, knees above ankles.",
+    "3- Hold the position, maintaining tension in your core and legs."
   ],
     "category": "obez"
   },
   {
     "id": "403",
-    "name": "Seated Side Bends",
-    "bodyPart": "core",
-    "equipment": "chair",
-    "gifUrl": "https://example.com/sidebends.gif",
-    "target": "obliques",
+    "name": "Reach And Catch",
+    "equipment": "Bodyweight",
+    "thumbnail": "reachAndCatch.jpg",
+    "video":"reachAndCatch.mp4", 
+    "target": "Obliques, Core",
+    "sets":"15s x 3",
     "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
+    "1- Lay flat on your back with both hands over one leg.",
+    "2- Reach toward your knee flexing your abs and obliques.",
+    "3- Do the prescribed amount of reps, then switch sides."
   ],
-    "category": "obez"
-  },
-  {
-    "id": "404",
-    "name": "Marching in Place",
-    "bodyPart": "cardio",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/marching.gif",
-    "target": "legs",
-    "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
-  ],
-    "category": "obez"
-  },
-  {
-    "id": "405",
-    "name": "Seated Knee Lifts",
-    "bodyPart": "core",
-    "equipment": "body weight",
-    "gifUrl": "https://example.com/kneelifts.gif",
-    "target": "abs",
-    "howTo":[
-    "1.Place your hands firmly on the ground, directly under shoulders.",
-    "2.Flatten your back so your entire body is straight and slowly lower your body.",
-    "3.Draw shoulder blades back and down, keeping elbows tucked close to your body.",
-    "4.Exhale as you push back to the starting position."
-  ],
-    "category": "obez"
+    "category": ["fazla_kilolu","obez"]
   }
 ]

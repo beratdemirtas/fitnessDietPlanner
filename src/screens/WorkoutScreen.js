@@ -43,7 +43,10 @@ const WorkoutScreen = ({ navigation }) => {
   useEffect(() => {
     if (bmiCategory) {
       const filteredExercises = exercisesData.filter(
-        (exercise) => exercise.category === bmiCategory
+        (exercise) =>
+          Array.isArray(exercise.category)
+            ? exercise.category.includes(bmiCategory)
+            : exercise.category === bmiCategory
       );
       setExercises(filteredExercises);
     }
@@ -163,7 +166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: { width: 120, height: 100, marginRight: 10, borderRadius: 10, resizeMode: 'cover' },
-  title: { fontSize: 16, fontWeight: 'bold' },
+  title: { fontSize: 15, fontWeight: 'bold' },
   subtitle: { fontSize: 14, color: 'gray' },
   completeButton: {
     backgroundColor: '#4CAF50',
