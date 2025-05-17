@@ -87,19 +87,20 @@ export default function MyMealsScreen() {
   const handleConsume = async (meal) => {
     if (!userEmail) return;
     const today = new Date().toISOString().split('T')[0];
-    const key = getMealsKey(userEmail, today);
-    const prev = await AsyncStorage.getItem(key);
-    let meals = prev ? JSON.parse(prev) : [];
-    meals = [
-      {
-        ...meal,
-        time: new Date().toISOString(),
-        date: today,
-      },
-      ...meals
-    ];
-    await AsyncStorage.setItem(key, JSON.stringify(meals));
-    Alert.alert('Consumed', 'Meal added to today!');
+    try {
+      await fetch('http://localhost:3001/api/meals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...meal,
+          userEmail,
+          date: today,
+        }),
+      });
+      Alert.alert('Consumed', 'Meal added to today!');
+    } catch (e) {
+      Alert.alert('Error', 'Could not add meal to today.');
+    }
   };
 
   const handleFavorite = async (food) => {
@@ -179,7 +180,12 @@ export default function MyMealsScreen() {
           {myMeals.map(meal => (
             <View key={meal.id} style={styles.mealCard}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <Text style={styles.mealName}>{meal.name}</Text>
+                <Text style={styles.mealName}>
+                  {meal.mealType ? meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1) : meal.name}
+                </Text>
+                {meal.mealType && meal.name && meal.mealType.toLowerCase() !== meal.name.toLowerCase() && (
+                  <Text style={{ fontSize: 15, color: '#888', fontWeight: 'bold', marginBottom: 2, textAlign: 'center' }}>{meal.name}</Text>
+                )}
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <TouchableOpacity style={styles.consumeBtn} onPress={() => handleConsume(meal)}>
                     <Text style={styles.consumeBtnText}>🍽️ Consume</Text>
@@ -200,7 +206,18 @@ export default function MyMealsScreen() {
               {!meal.portion && (
                 <Text style={{ fontStyle: 'italic', color: '#bbb', fontSize: 14, marginBottom: 2 }}>Portion: Not specified</Text>
               )}
-              <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
+              {Array.isArray(meal.foods) && meal.foods.length > 0 ? (
+                <View style={{ marginBottom: 4 }}>
+                  {meal.foods.map((f, i) => (
+                    <Text key={i} style={styles.foodName}>
+                      Food: <Text style={{ fontWeight: 'bold' }}>{f.description}</Text>
+                      {f.portion ? `  |  Portion: ${f.portion}` : ''}
+                    </Text>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
+              )}
               <View style={styles.mealMacrosRow}>
                 <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
                 <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
