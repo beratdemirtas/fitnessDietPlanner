@@ -4,4 +4,13 @@ export default {
   "kickbacks.jpg": require('../../assets/images/exercises/og-male-Bodyweight-kickbacks-front.jpg'),
   "dumbbellCurl.png": require('../../assets/images/exercises/dumbellCurl.png'),
   "benchDips.png": require('../../assets/images/exercises/benchDips.png'),
+  "forwardLunges.jpg": require('../../assets/images/exercises/og-male-Bodyweight-forward-lunges-front.jpg'),
+  "declinePushUp.jpg": require('../../assets/images/exercises/og-male-Bodyweight-decline-push-up-front.jpg'),
+  "dumbbellLateralRaise.jpg": require('../../assets/images/exercises/dumbellLateralRaise.jpg'),
+  "elbowSidePlank.jpg": require('../../assets/images/exercises/elbowSidePlank.jpg'),
+  "dumbbellRow.jpg": require('../../assets/images/exercises/dumbbellRow.jpg'),
+  "armCircle.jpg": require('../../assets/images/exercises/armCircle.jpg'),
+  "wallSit.jpg": require('../../assets/images/exercises/wallSit.jpg'),
+  "reachAndCatch.jpg": require('../../assets/images/exercises/reachAndCatch.jpg'),
+  "kneePushUp.jpg": require('../../assets/images/exercises/bodyweightKneePushUp.jpg'),
 };

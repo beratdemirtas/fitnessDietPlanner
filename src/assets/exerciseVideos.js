@@ -4,4 +4,13 @@ export default {
   "kickbacks.mp4": require('../../assets/videos/exercises/male-Bodyweight-kickbacks-side.mp4'),
   "dumbbellCurl.mp4": require('../../assets/videos/exercises/male-Dumbbells-dumbbell-curl-side.mp4'),
   "benchDips.mp4": require('../../assets/videos/exercises/male-Bodyweight-bench-dips-side.mp4'),
+  "forwardLunges.mp4": require('../../assets/videos/exercises/male-Bodyweight-forward-lunges-side.mp4'),
+  "declinePushUp.mp4": require('../../assets/videos/exercises/male-Bodyweight-decline-push-up-side.mp4'),
+  "dumbbellLateralRaise.mp4": require('../../assets/videos/exercises/male-Dumbbells-dumbbell-lateral-raise-side.mp4'),
+  "elbowSidePlank.mp4": require('../../assets/videos/exercises/male-bodyweight-elbow-side-plank-front.mp4'),
+  "dumbbellRow.mp4": require('../../assets/videos/exercises/male-Dumbbells-dumbbell-row-bilateral-side.mp4'),
+  "armCircle.mp4": require('../../assets/videos/exercises/male-Bodyweight-backward-arm-circle-side.mp4'),
+  "wallSit.mp4": require('../../assets/videos/exercises/male-Bodyweight-wall-sit-side.mp4'),
+  "reachAndCatch.mp4": require('../../assets/videos/exercises/male-Bodyweight-reach-and-catch-front.mp4'),
+  "kneePushUp.mp4": require('../../assets/videos/exercises/male-Bodyweight-bodyweight-knee-push-ups-side.mp4'),
 };
