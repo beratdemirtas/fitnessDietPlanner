@@ -6,8 +6,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import API_BASE_URL from '../config/config';
 
-const API_URL = 'http://localhost:3001/api/meals'; // Gerekirse IP ile değiştirebiliriz burayı !!
+const API_URL = `${API_BASE_URL}/api/meals`; // Gerekirse IP ile değiştirebiliriz burayı !!
 const USDA_API_KEY = 'q73lnVjXeJ4Gp1bowe8yjT0fVgf7AbiNgZZi3A6Z';
 const USDA_API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
 

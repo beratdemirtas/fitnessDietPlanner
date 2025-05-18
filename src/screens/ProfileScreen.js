@@ -15,11 +15,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../App';
+import API_BASE_URL from '../config/config';
 
-const API_URL = 'http://localhost:3001/api/user/profile';
-const LOGIN_URL = 'http://localhost:3001/api/user/login';
-const UPDATE_URL = 'http://localhost:3001/api/user/profile';
-const DELETE_URL = 'http://localhost:3001/api/user/profile';
+const API_URL = `${API_BASE_URL}/api/user/profile`;
+const LOGIN_URL = `${API_BASE_URL}/api/user/login`;
+const UPDATE_URL = `${API_BASE_URL}/api/user/profile`;
+const DELETE_URL = `${API_BASE_URL}/api/user/profile`;
 
 export default function ProfileScreen() {
   const { signOut } = useContext(AuthContext);
@@ -59,7 +60,7 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:3001/api/user/profile', {
+      const response = await fetch(`${API_URL}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

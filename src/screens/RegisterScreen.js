@@ -5,8 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const API_URL = 'http://localhost:3001/api/user/register'; // Gerekirse IP ile değiştir
+import API_BASE_URL from '../config/config';
 
 const RegisterScreen = () => {
   const [name, setName] = useState('');
@@ -48,7 +47,7 @@ const RegisterScreen = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(`${API_BASE_URL}/api/user/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -158,4 +157,4 @@ const styles = StyleSheet.create({
   linkButton: { marginTop: 20, alignItems: 'center' },
 });
 
-export default RegisterScreen; 
+export default RegisterScreen;
