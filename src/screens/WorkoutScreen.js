@@ -4,6 +4,7 @@ import exercisesData from '../../assets/data/exercises.json';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import exerciseImages from '../assets/exerciseImages';
+import API_BASE_URL from '../config/config';
 
 const WorkoutScreen = ({ navigation }) => {
   const [exercises, setExercises] = useState([]);
@@ -17,7 +18,7 @@ const WorkoutScreen = ({ navigation }) => {
       try {
         const email = await AsyncStorage.getItem('userEmail');
         if (!email) return;
-        const response = await fetch(`http://localhost:3001/api/user/profile?email=${email}`);
+        const response = await fetch(`${API_BASE_URL}/api/user/profile?email=${email}`);
         const data = await response.json();
         if (data && data.bmi) {
           setBmi(data.bmi);

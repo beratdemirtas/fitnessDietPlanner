@@ -12,8 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../App';
-
-const API_URL = 'http://localhost:3001/api/user/login'; // Gerekirse IP ile değiştir
+import API_BASE_URL from '../config/config';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -30,7 +29,7 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/user/login', {
+      const response = await fetch(`${API_BASE_URL}/api/user/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -101,4 +100,4 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   linkText: { color: '#32CD32', marginTop: 18, fontWeight: 'bold' },
   linkButton: { marginTop: 20, alignItems: 'center' },
-}); 
+});

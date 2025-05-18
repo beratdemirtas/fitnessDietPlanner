@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import API_BASE_URL from '../config/config'; // <-- Bunu ekle
 
 const USDA_API_KEY = 'q73lnVjXeJ4Gp1bowe8yjT0fVgf7AbiNgZZi3A6Z';
 const USDA_API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
@@ -88,7 +89,7 @@ export default function MyMealsScreen() {
     if (!userEmail) return;
     const today = new Date().toISOString().split('T')[0];
     try {
-      await fetch('http://localhost:3001/api/meals', {
+      await fetch(`${API_BASE_URL}/api/meals`, { // <-- Burayı güncelle
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -315,4 +316,4 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#FF3B30',
   },
-}); 
+});
