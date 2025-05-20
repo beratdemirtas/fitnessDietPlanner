@@ -39,11 +39,15 @@ export default function ProfileScreen() {
   const loadUserData = async () => {
     try {
       const userEmail = await AsyncStorage.getItem('userEmail');
+      console.log('userEmail:', userEmail); // DEBUG
       if (userEmail) {
         const response = await fetch(`${API_URL}?email=${userEmail}`);
         const data = await response.json();
+        console.log('Profile API response:', data); // DEBUG
         setUserData(data);
         setEditedData(data);
+      } else {
+        throw new Error('No userEmail found in AsyncStorage');
       }
     } catch (error) {
       console.error('Error loading user data:', error);

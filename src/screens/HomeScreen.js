@@ -4,6 +4,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import API_BASE_URL from '../config/config'; // ekle
+
+const API_URL = `${API_BASE_URL}/api/user/profile`;
 
 const HomeScreen = ({ navigation }) => {
   const [weeklyActivity, setWeeklyActivity] = useState([]);
@@ -12,10 +15,22 @@ const HomeScreen = ({ navigation }) => {
   const [weeklyLabels, setWeeklyLabels] = useState(['', '', '', '', '', '', '']);
 
   useEffect(() => {
-    AsyncStorage.getItem('userName').then(name => {
-      if (name) setUserName(name);
-      else setUserName('');
-    });
+    const fetchUserName = async () => {
+      const userEmail = await AsyncStorage.getItem('userEmail');
+      if (userEmail) {
+        try {
+          const response = await fetch(`${API_URL}?email=${userEmail}`);
+          const data = await response.json();
+          if (data && data.name) setUserName(data.name);
+          else setUserName('');
+        } catch (e) {
+          setUserName('');
+        }
+      } else {
+        setUserName('');
+      }
+    };
+    fetchUserName();
   }, []);
 
   const getThisWeekDays = () => {
@@ -42,11 +57,17 @@ const HomeScreen = ({ navigation }) => {
     React.useCallback(() => {
       const loadActivityData = async () => {
         try {
+          const userEmail = await AsyncStorage.getItem('userEmail');
+          if (!userEmail) return;
+
           const completedData = await AsyncStorage.getItem('completedExercises');
           const completed = completedData ? JSON.parse(completedData) : {};
           const thisWeek = getThisWeekDays();
 
-          const data = thisWeek.map(({ date }) => completed[date] ? completed[date].length : 0);
+          // Sadece giriş yapan kullanıcının verisini kullan
+          const userCompleted = completed[userEmail] || {};
+
+          const data = thisWeek.map(({ date }) => userCompleted[date] ? userCompleted[date].length : 0);
           const labels = thisWeek.map(({ dayName }) => dayName);
 
           setWeeklyData(data);
