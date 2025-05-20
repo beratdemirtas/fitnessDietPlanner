@@ -59,13 +59,16 @@ const WorkoutScreen = ({ navigation }) => {
         const completedData = await AsyncStorage.getItem('completedExercises');
         const completed = completedData ? JSON.parse(completedData) : {};
         const today = new Date().toISOString().split('T')[0];
+        const userEmail = await AsyncStorage.getItem('userEmail');
+        if (!userEmail) return;
 
-        if (!completed[today]) {
-          completed[today] = [];
+        if (!completed[userEmail]) completed[userEmail] = {};
+        if (!completed[userEmail][today]) {
+          completed[userEmail][today] = [];
           await AsyncStorage.setItem('completedExercises', JSON.stringify(completed));
         }
 
-        setCompletedExercises(completed[today]);
+        setCompletedExercises(completed[userEmail][today]);
       } catch (error) {
         console.error('Tamamlanan hareketler yüklenirken hata oluştu:', error);
       }
@@ -84,19 +87,21 @@ const WorkoutScreen = ({ navigation }) => {
   const completeExercise = async (exerciseId) => {
     try {
       const today = new Date().toISOString().split('T')[0];
+      const userEmail = await AsyncStorage.getItem('userEmail');
+      if (!userEmail) return;
+
       const completedData = await AsyncStorage.getItem('completedExercises');
       const completed = completedData ? JSON.parse(completedData) : {};
 
-      if (!completed[today]) {
-        completed[today] = [];
-      }
+      if (!completed[userEmail]) completed[userEmail] = {};
+      if (!completed[userEmail][today]) completed[userEmail][today] = [];
 
-      if (!completed[today].includes(exerciseId)) {
-        completed[today].push(exerciseId);
-        setCompletedExercises([...completed[today]]);
+      if (!completed[userEmail][today].includes(exerciseId)) {
+        completed[userEmail][today].push(exerciseId);
       }
 
       await AsyncStorage.setItem('completedExercises', JSON.stringify(completed));
+      setCompletedExercises([...completed[userEmail][today]]);
     } catch (error) {
       console.error('Hareket tamamlanırken hata oluştu:', error);
     }
