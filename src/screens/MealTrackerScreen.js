@@ -108,13 +108,21 @@ export default function MealTrackerScreen() {
   };
 
   const removeMeal = async (id) => {
+    if (!id) {
+      setError('Meal id not found, cannot delete.');
+      return;
+    }
     try {
+      console.log('Silinecek meal id:', id);
       setLoading(true);
       const res = await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      console.log('Silme response status:', res.status, 'response:', data);
       if (!res.ok) throw new Error('Failed to delete meal');
-      fetchMeals(userEmail);
+      fetchMealsForDay();
     } catch (e) {
       setError('Failed to delete meal.');
+      console.log('Silme hatası:', e);
     }
     setLoading(false);
   };
@@ -243,11 +251,7 @@ export default function MealTrackerScreen() {
 
   // Sadece seçilen güne ait yemekleri göster (backend yanlış veri dönerse de güvenli olsun)
   const selectedDateStr = selectedDate.toISOString().split('T')[0];
-  const filteredMealsForDay = mealsForDay.filter(meal => {
-    if (!meal.date) return false;
-    const mealDateStr = new Date(meal.date).toISOString().split('T')[0];
-    return mealDateStr === selectedDateStr;
-  });
+  const filteredMealsForDay = mealsForDay.filter(meal => meal.date === selectedDateStr);
 
   // Toplam makroları ve kalori sadece filteredMeals üzerinden hesapla
   const getTotals = () => {
@@ -361,36 +365,6 @@ export default function MealTrackerScreen() {
       fetchMealsForDay();
     } catch (e) {}
   };
-
-  // Meals for this day listesi:
-  {filteredMealsForDay.map(meal => (
-    <View key={meal._id || meal.id} style={styles.mealCard}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={styles.mealName}>{meal.name}</Text>
-        <TouchableOpacity onPress={() => handleDeleteMeal(meal._id)}>
-          <Text style={styles.deleteButton}>🗑️</Text>
-        </TouchableOpacity>
-      </View>
-      {Array.isArray(meal.foods) && meal.foods.length > 0 ? (
-        <View style={{ marginBottom: 4 }}>
-          {meal.foods.map((f, i) => (
-            <Text key={i} style={styles.foodName}>
-              Food: <Text style={{ fontWeight: 'bold' }}>{f.description}</Text>
-              {f.portion ? `  |  Portion: ${f.portion}` : ''}
-            </Text>
-          ))}
-        </View>
-      ) : (
-        <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
-      )}
-      <View style={styles.mealMacrosRow}>
-        <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
-        <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
-        <Text style={styles.mealMacro}><Text style={styles.emoji}>🍞</Text> {meal.carbs}g</Text>
-      </View>
-      <Text style={styles.mealCalorie}>🔥 {meal.calories} kcal</Text>
-    </View>
-  ))}
 
   const handleMealSearch = async (text) => {
     setMealSearch(text);
@@ -514,6 +488,36 @@ export default function MealTrackerScreen() {
           <Text style={styles.noMealsText}>No meals for this day.</Text>
         </View>
       )}
+      {filteredMealsForDay.map(meal => (
+        <View key={meal._id || meal.id} style={styles.mealCard}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.mealName}>{meal.name}</Text>
+            {meal._id ? (
+              <TouchableOpacity onPress={() => confirmRemoveMeal(meal._id)}>
+                <Text style={styles.deleteButton}>🗑️</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {Array.isArray(meal.foods) && meal.foods.length > 0 ? (
+            <View style={{ marginBottom: 4 }}>
+              {meal.foods.map((f, i) => (
+                <Text key={i} style={styles.foodName}>
+                  Food: <Text style={{ fontWeight: 'bold' }}>{f.description}</Text>
+                  {f.portion ? `  |  Portion: ${f.portion}` : ''}
+                </Text>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
+          )}
+          <View style={styles.mealMacrosRow}>
+            <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
+            <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
+            <Text style={styles.mealMacro}><Text style={styles.emoji}>🍞</Text> {meal.carbs}g</Text>
+          </View>
+          <Text style={styles.mealCalorie}>🔥 {meal.calories} kcal</Text>
+        </View>
+      ))}
       {error ? <Text style={{ color: 'red', textAlign: 'center', marginBottom: 8 }}>{error}</Text> : null}
     </ScrollView>
     <View style={styles.bottomButtonRow}>

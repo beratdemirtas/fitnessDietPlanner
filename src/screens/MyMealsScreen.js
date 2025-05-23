@@ -93,6 +93,9 @@ export default function MyMealsScreen() {
       ...meal,
       userEmail,
       date: today,
+      name: meal.name && meal.name.trim() !== ''
+        ? meal.name
+        : (meal.mealType ? meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1) : 'Meal'),
     };
     try {
       await fetch(`${API_BASE_URL}/api/meals`, {
