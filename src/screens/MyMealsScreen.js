@@ -17,6 +17,7 @@ export default function MyMealsScreen() {
   const [favorites, setFavorites] = useState([]);
   const [userEmail, setUserEmail] = useState('');
   const [myMeals, setMyMeals] = useState([]);
+  const navigation = useNavigation();
 
   useEffect(() => {
     AsyncStorage.getItem('userEmail').then(email => {
@@ -88,17 +89,19 @@ export default function MyMealsScreen() {
   const handleConsume = async (meal) => {
     if (!userEmail) return;
     const today = new Date().toISOString().split('T')[0];
+    const mealToSend = {
+      ...meal,
+      userEmail,
+      date: today,
+    };
     try {
-      await fetch(`${API_BASE_URL}/api/meals`, { // <-- Burayı güncelle
+      await fetch(`${API_BASE_URL}/api/meals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...meal,
-          userEmail,
-          date: today,
-        }),
+        body: JSON.stringify(mealToSend),
       });
       Alert.alert('Consumed', 'Meal added to today!');
+      navigation.navigate('MealTracker');
     } catch (e) {
       Alert.alert('Error', 'Could not add meal to today.');
     }

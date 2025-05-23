@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Meal = require('../models/Meal'); 
 
 const router = express.Router();
 
@@ -123,4 +124,28 @@ router.delete('/profile', async (req, res) => {
   }
 });
 
-module.exports = router; 
+// Günlük toplam makrolar endpoint'i
+router.get('/daily-macros', async (req, res) => {
+  try {
+    const { email, date } = req.query;
+    if (!email || !date) {
+      return res.status(400).json({ message: 'email ve date zorunludur' });
+    }
+    const meals = await Meal.find({ userEmail: email, date });
+    const totals = meals.reduce(
+      (acc, meal) => {
+        acc.protein += meal.protein || 0;
+        acc.fat += meal.fat || 0;
+        acc.carbs += meal.carbs || 0;
+        acc.calories += meal.calories || 0;
+        return acc;
+      },
+      { protein: 0, fat: 0, carbs: 0, calories: 0 }
+    );
+    res.json(totals);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+module.exports = router;

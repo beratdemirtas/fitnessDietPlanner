@@ -284,7 +284,7 @@ export default function MealTrackerScreen() {
     }
     
     const dateStr = selectedDate.toISOString().split('T')[0];
-    console.log('Fetching meals for:', { userEmail, date: dateStr });
+    console.log('MealTracker userEmail:', userEmail, 'date:', selectedDate.toISOString().split('T')[0]);
     
     try {
       const response = await fetch(`${API_URL}?userEmail=${userEmail}&date=${dateStr}`);
@@ -618,6 +618,35 @@ export default function MealTrackerScreen() {
               </TouchableOpacity>
             ))}
           </View>
+          <Text style={styles.inputLabel}>Select Date</Text>
+          <TouchableOpacity 
+            style={styles.dateSelector} 
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Ionicons name="calendar-outline" size={22} color="#2d4d6a" style={{marginRight: 6}} />
+            <Text style={styles.dateSelectorText}>
+              {selectedDate.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={(event, selected) => {
+                setShowDatePicker(false);
+                if (selected) {
+                  setSelectedDate(selected);
+                }
+              }}
+              maximumDate={new Date()}
+            />
+          )}
           <Text style={styles.inputLabel}>Add Food</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 8 }}>
             <TextInput
@@ -983,14 +1012,15 @@ const styles = StyleSheet.create({
   dateSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: '#eaf3ef',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
-  dateText: {
+  dateSelectorText: {
+    color: '#2d4d6a',
+    fontWeight: 'bold',
     fontSize: 16,
-    color: '#2E7D32',
-    marginRight: 8,
   },
 });
