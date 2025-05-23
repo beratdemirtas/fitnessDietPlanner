@@ -28,8 +28,6 @@ export default function MealTrackerScreen() {
   const [searchResult, setSearchResult] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [macroGoals, setMacroGoals] = useState({ protein: 100, fat: 60, carbs: 200, calories: 2000 });
-  const [showGoalModal, setShowGoalModal] = useState(false);
-  const [goalInput, setGoalInput] = useState(macroGoals);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [addMealTime, setAddMealTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -44,6 +42,15 @@ export default function MealTrackerScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedMealType, setSelectedMealType] = useState('breakfast');
   const [mealItems, setMealItems] = useState([]);
+  const [userInfo, setUserInfo] = useState({
+    age: '',
+    gender: 'male',
+    height: '',
+    weight: '',
+    activityLevel: 'moderate'
+  });
+  const [calculatedCalories, setCalculatedCalories] = useState(null);
+  const [inputErrors, setInputErrors] = useState({});
 
   useEffect(() => {
     AsyncStorage.getItem('userEmail').then(email => {
@@ -433,17 +440,69 @@ export default function MealTrackerScreen() {
     { label: 'Custom', value: 'custom' },
   ];
 
+  const validateInputs = () => {
+    const errors = {};
+    if (!userInfo.age || isNaN(userInfo.age) || userInfo.age < 10 || userInfo.age > 100) errors.age = 'Enter a valid age (10-100)';
+    if (!userInfo.height || isNaN(userInfo.height) || userInfo.height < 100 || userInfo.height > 250) errors.height = 'Enter a valid height (100-250 cm)';
+    if (!userInfo.weight || isNaN(userInfo.weight) || userInfo.weight < 30 || userInfo.weight > 250) errors.weight = 'Enter a valid weight (30-250 kg)';
+    setInputErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const calculateCalories = () => {
+    if (!validateInputs()) return;
+    const { age, gender, height, weight, activityLevel } = userInfo;
+    
+    if (!age || !height || !weight) {
+      setError('Please fill in all required fields');
+      return;
+    }
+
+    // Convert height from cm to meters
+    const heightInMeters = height / 100;
+    
+    // Calculate BMR using Mifflin-St Jeor Equation
+    let bmr;
+    if (gender === 'male') {
+      bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
+    } else {
+      bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
+    }
+
+    // Apply activity multiplier
+    const activityMultipliers = {
+      sedentary: 1.2,      // Little or no exercise
+      light: 1.375,        // Light exercise 1-3 days/week
+      moderate: 1.55,      // Moderate exercise 3-5 days/week
+      active: 1.725,       // Hard exercise 6-7 days/week
+      veryActive: 1.9      // Very hard exercise & physical job
+    };
+
+    const tdee = Math.round(bmr * activityMultipliers[activityLevel]);
+    setCalculatedCalories(tdee);
+
+    // Set macro goals based on calculated calories
+    const newMacroGoals = {
+      calories: tdee,
+      protein: Math.round((tdee * 0.3) / 4), // 30% of calories from protein
+      carbs: Math.round((tdee * 0.45) / 4),  // 45% of calories from carbs
+      fat: Math.round((tdee * 0.25) / 9)     // 25% of calories from fat
+    };
+
+    setGoalInput(newMacroGoals);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Meal Tracking</Text>
-      <View style={styles.totalsBox}>
-        <Text style={styles.totalsTitle}>Today's Total</Text>
-        <Text style={styles.totalsCalorie}>🔥 {totals.totalCalories} kcal</Text>
-        <View style={styles.totalsMacrosRow}>
-          <Text style={styles.totalsMacro}>💪 {totals.totalProtein}g</Text>
-          <Text style={styles.totalsMacro}>🍞 {totals.totalCarbs}g</Text>
-          <Text style={styles.totalsMacro}>🥑 {totals.totalFat}g</Text>
+      {/* Şık ve modern 'Today's Total' kutusu */}
+      <View style={styles.todaysTotalCard}>
+        <Text style={styles.todaysTotalLabel}>Today's Total</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 6 }}>
+          <Text style={styles.caloriesIcon}>🔥</Text>
+          <Text style={styles.caloriesValue}>{Number(totals.totalCalories).toFixed(0)}</Text>
+          <Text style={styles.caloriesUnit}> / {Number(macroGoals.calories).toFixed(0)} kcal</Text>
         </View>
       </View>
       {macroList.map(macro => {
@@ -454,7 +513,7 @@ export default function MealTrackerScreen() {
             <View style={styles.progressBarBg}>
               <View style={[styles.progressBarFill, { width: `${Math.min(percent, 100)}%`, backgroundColor: macroBarColor(percent) }]} />
             </View>
-            <Text style={styles.macroPercent}>{macro.total}g / {macro.goal}g</Text>
+            <Text style={styles.macroPercent}>{Number(macro.total).toFixed(0)}g / {Number(macro.goal).toFixed(0)}g</Text>
           </View>
         );
       })}
@@ -519,84 +578,27 @@ export default function MealTrackerScreen() {
         </View>
       ))}
       {error ? <Text style={{ color: 'red', textAlign: 'center', marginBottom: 8 }}>{error}</Text> : null}
+      {/* Şık Kalori Kartı */}
+      <View style={styles.calorieCard}>
+        <Text style={styles.calorieLabel}>Calories</Text>
+        <Text style={styles.calorieValue}>
+          {Number(totals.totalCalories).toFixed(0)}
+          <Text style={styles.calorieUnit}> kcal</Text>
+        </Text>
+        <Text style={styles.calorieGoal}>/ {Number(macroGoals.calories).toFixed(0)} kcal goal</Text>
+      </View>
     </ScrollView>
     <View style={styles.bottomButtonRow}>
       <TouchableOpacity style={styles.bottomBtn} onPress={() => setShowCreateMealModal(true)}>
         <Text style={styles.bottomBtnText}>Create Meal</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.bottomBtn} onPress={() => setShowGoalModal(true)}>
+      <TouchableOpacity style={styles.bottomBtn} onPress={() => navigation.navigate('GoalScreen')}>
         <Text style={styles.bottomBtnText}>Set Daily Goal</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.bottomBtn} onPress={() => navigation.navigate('MyMeals')}>
         <Text style={styles.bottomBtnText}>My Meals</Text>
       </TouchableOpacity>
     </View>
-    <Modal visible={showGoalModal} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Set Daily Macro Goals</Text>
-          <Text style={{ color: '#666', fontSize: 15, marginBottom: 12, textAlign: 'center' }}>
-            Set your daily targets for protein, carbs, fat and calories.
-          </Text>
-          {[
-            { key: 'protein', label: 'Protein', emoji: '💪', unit: 'g', min: 10, max: 500 },
-            { key: 'carbs', label: 'Carbs', emoji: '🍞', unit: 'g', min: 10, max: 1000 },
-            { key: 'fat', label: 'Fat', emoji: '🥑', unit: 'g', min: 5, max: 300 },
-            { key: 'calories', label: 'Calories', emoji: '🔥', unit: 'kcal', min: 500, max: 8000 },
-          ].map((macro, idx) => {
-            const value = String(goalInput[macro.key]);
-            const isInvalid = !value || isNaN(Number(value)) || Number(value) < macro.min || Number(value) > macro.max;
-            return (
-              <View key={macro.key} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                <Text style={{ fontSize: 22, width: 32 }}>{macro.emoji}</Text>
-                <Text style={{ width: 70, fontWeight: 'bold', color: '#222', fontSize: 16 }}>{macro.label}</Text>
-                <TextInput
-                  style={{
-                    flex: 1,
-                    backgroundColor: isInvalid ? '#ffeaea' : '#f5f5f5',
-                    borderRadius: 10,
-                    padding: 10,
-                    fontSize: 16,
-                    borderWidth: isInvalid ? 1.5 : 0,
-                    borderColor: isInvalid ? '#E57373' : 'transparent',
-                    marginHorizontal: 8,
-                  }}
-                  keyboardType="numeric"
-                  value={value}
-                  onChangeText={v => setGoalInput({ ...goalInput, [macro.key]: v })}
-                  placeholder={macro.min + ''}
-                />
-                <Text style={{ width: 32, color: '#888', fontSize: 15 }}>{macro.unit}</Text>
-              </View>
-            );
-          })}
-          {Object.entries(goalInput).some(([k, v]) => !v || isNaN(Number(v))) && (
-            <Text style={{ color: '#E57373', fontSize: 13, marginBottom: 6, textAlign: 'center' }}>
-              Please enter valid numbers for all fields.
-            </Text>
-          )}
-          <TouchableOpacity
-            style={{ backgroundColor: '#4CAF50', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 10, marginBottom: 6 }}
-            onPress={saveGoals}
-            disabled={Object.entries(goalInput).some(([k, v]) => !v || isNaN(Number(v)))}
-          >
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 17 }}>Save</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ backgroundColor: '#888', borderRadius: 10, padding: 12, alignItems: 'center', marginBottom: 4 }}
-            onPress={() => setShowGoalModal(false)}
-          >
-            <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 17 }}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ backgroundColor: '#eee', borderRadius: 10, padding: 10, alignItems: 'center', marginBottom: 2 }}
-            onPress={() => setGoalInput({ protein: 100, carbs: 200, fat: 60, calories: 2000 })}
-          >
-            <Text style={{ color: '#666', fontWeight: 'bold', fontSize: 15 }}>Reset to default</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
     <Modal visible={showCreateMealModal} animationType="slide" transparent>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
@@ -1026,5 +1028,402 @@ const styles = StyleSheet.create({
     color: '#2d4d6a',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  genderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  genderButton: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+    alignItems: 'center',
+  },
+  genderButtonActive: {
+    backgroundColor: '#4CAF50',
+  },
+  genderButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  genderButtonTextActive: {
+    color: '#fff',
+  },
+  picker: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+  },
+  calculateButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  calculateButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  resultsContainer: {
+    width: '100%',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  resultsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  caloriesText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  macroTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  macroText: {
+    fontSize: 15,
+    color: '#666',
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: '#888',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalContentModern: {
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    padding: 28,
+    width: '90%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  modalTitleModern: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    color: '#666',
+    fontSize: 15,
+    marginBottom: 18,
+    textAlign: 'center',
+  },
+  rowInputs: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  inputGroupSmall: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  inputGroupFull: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  inputLabelModern: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 2,
+    color: '#333',
+  },
+  inputModern: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    padding: 10,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    marginBottom: 2,
+  },
+  inputError: {
+    borderColor: '#E57373',
+    backgroundColor: '#fff0f0',
+  },
+  errorTextSmall: {
+    color: '#E57373',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+  genderRowModern: {
+    flexDirection: 'row',
+    width: '100%',
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  genderBtnModern: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderRadius: 10,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  genderBtnActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#388e3c',
+  },
+  genderBtnText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  genderBtnTextActive: {
+    color: '#fff',
+  },
+  pickerModern: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  calculateBtnModern: {
+    backgroundColor: '#388e3c',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 8,
+    width: '100%',
+  },
+  calculateBtnTextModern: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  resultCardModern: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 18,
+    marginBottom: 8,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  resultTitleModern: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 4,
+  },
+  resultCaloriesModern: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 10,
+  },
+  resultMacrosRowModern: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 10,
+  },
+  resultMacroBox: {
+    flex: 1,
+    backgroundColor: '#eaf3ef',
+    borderRadius: 10,
+    marginHorizontal: 4,
+    padding: 8,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  resultMacroIcon: {
+    fontSize: 18,
+    marginRight: 4,
+  },
+  resultMacroText: {
+    fontSize: 15,
+    color: '#388e3c',
+    fontWeight: 'bold',
+  },
+  saveBtnModern: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginTop: 8,
+    width: '100%',
+  },
+  saveBtnTextModern: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cancelBtnModern: {
+    backgroundColor: '#bbb',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginTop: 8,
+    width: '100%',
+  },
+  cancelBtnTextModern: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  totalsBoxMinimal: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 18,
+    alignItems: 'center',
+  },
+  totalsTitleMinimal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  totalsRowMinimal: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 4,
+  },
+  totalsLabelMinimal: {
+    fontSize: 15,
+    color: '#888',
+    fontWeight: 'bold',
+  },
+  totalsValueMinimal: {
+    fontSize: 15,
+    color: '#222',
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
+  calorieCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 22,
+    paddingVertical: 28,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginBottom: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  calorieLabel: {
+    fontSize: 16,
+    color: '#888',
+    fontWeight: 'bold',
+    marginBottom: 6,
+    letterSpacing: 1,
+  },
+  calorieValue: {
+    fontSize: 44,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 2,
+  },
+  calorieUnit: {
+    fontSize: 20,
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+  calorieGoal: {
+    fontSize: 15,
+    color: '#aaa',
+    marginTop: 2,
+  },
+  todaysTotalCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 22,
+    paddingVertical: 22,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+    marginBottom: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  todaysTotalLabel: {
+    fontSize: 16,
+    color: '#888',
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  caloriesIcon: {
+    fontSize: 22,
+    marginRight: 4,
+    color: '#FF6347',
+  },
+  caloriesValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginRight: 4,
+  },
+  caloriesUnit: {
+    fontSize: 16,
+    color: '#888',
+    fontWeight: 'bold',
+    marginBottom: 2,
   },
 });

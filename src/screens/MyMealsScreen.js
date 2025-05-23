@@ -186,25 +186,23 @@ export default function MyMealsScreen() {
           {myMeals.length === 0 && <Text style={styles.infoText}>No saved meals yet.</Text>}
           {myMeals.map(meal => (
             <View key={meal.id} style={styles.mealCard}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <Text style={styles.mealName}>
-                  {meal.mealType ? meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1) : meal.name}
-                </Text>
-                {meal.mealType && meal.name && meal.mealType.toLowerCase() !== meal.name.toLowerCase() && (
-                  <Text style={{ fontSize: 15, color: '#888', fontWeight: 'bold', marginBottom: 2, textAlign: 'center' }}>{meal.name}</Text>
-                )}
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TouchableOpacity style={styles.consumeBtn} onPress={() => handleConsume(meal)}>
-                    <Text style={styles.consumeBtnText}>🍽️ Consume</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', width: '100%' }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.mealName, { textAlign: 'left', marginBottom: 0 }]} numberOfLines={2} ellipsizeMode='tail'>
+                    {meal.name}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'column', alignItems: 'flex-end', alignSelf: 'flex-start', minWidth: 90 }}>
+                  <TouchableOpacity onPress={() => handleConsume(meal)} style={{ marginBottom: 4 }}>
+                    <View style={{ backgroundColor: '#4CAF50', borderRadius: 8, paddingVertical: 4, paddingHorizontal: 12 }}>
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Consume</Text>
+                    </View>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.deleteBtn} onPress={async () => {
-                    const key = getMyMealsKey(userEmail);
-                    const updated = myMeals.filter(m => m.id !== meal.id);
-                    setMyMeals(updated);
-                    await AsyncStorage.setItem(key, JSON.stringify(updated));
-                  }}>
-                    <Text style={styles.deleteBtnText}>🗑️</Text>
-                  </TouchableOpacity>
+                  {meal._id ? (
+                    <TouchableOpacity onPress={() => confirmRemoveMeal(meal._id)}>
+                      <Text style={styles.deleteButton}>🗑️</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               </View>
               {meal.portion && (
@@ -239,9 +237,13 @@ export default function MyMealsScreen() {
           {favorites.length === 0 && <Text style={styles.infoText}>No favorites yet.</Text>}
           {favorites.map(meal => (
             <View key={meal.id} style={styles.mealCard}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                <Text style={styles.mealName}>{meal.name}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', width: '100%' }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.mealName, { textAlign: 'left', marginBottom: 0 }]} numberOfLines={2} ellipsizeMode='tail'>
+                    {meal.name}
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'column', alignItems: 'flex-end', alignSelf: 'flex-start', minWidth: 90 }}>
                   <TouchableOpacity style={styles.consumeBtn} onPress={() => handleConsume(meal)}>
                     <Text style={styles.consumeBtnText}>🍽️ Consume</Text>
                   </TouchableOpacity>
