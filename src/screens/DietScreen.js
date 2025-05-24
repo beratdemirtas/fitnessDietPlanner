@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import API_BASE_URL from '../config/config';
 
 const DIET_TYPES = [
   { label: 'None', value: '' },
@@ -34,7 +36,6 @@ function calculateCalories({ gender, age, height, weight, activity }) {
 }
 
 const DietScreen = ({ navigation }) => {
-  const [hasDietList] = useState(false); // change to true to simulate existing plan
   const [modalVisible, setModalVisible] = useState(false);
   // Form states
   const [gender, setGender] = useState('male');
@@ -44,8 +45,24 @@ const DietScreen = ({ navigation }) => {
   const [activity, setActivity] = useState(1.2);
   const [diet, setDiet] = useState('');
   const [allergies, setAllergies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const calories = calculateCalories({ gender, age: Number(age), height: Number(height), weight: Number(weight), activity });
+
+  useEffect(() => {
+    // On mount, check for saved preferences
+    const checkPreferences = async () => {
+      setLoading(true);
+      const saved = await AsyncStorage.getItem('dietPreferences');
+      if (saved) {
+        const prefs = JSON.parse(saved);
+        navigation.replace('DietPreferences', { preferences: prefs });
+      } else {
+        setLoading(false);
+      }
+    };
+    checkPreferences();
+  }, [navigation]);
 
   const toggleAllergy = (value) => {
     setAllergies((prev) =>
@@ -53,15 +70,20 @@ const DietScreen = ({ navigation }) => {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    const preferences = {
+      calories,
+      diet,
+      allergies,
+      gender,
+      age,
+      height,
+      weight,
+      activity,
+    };
+    await AsyncStorage.setItem('dietPreferences', JSON.stringify(preferences));
     setModalVisible(false);
-    navigation.navigate('DietPreferences', {
-      preferences: {
-        calories,
-        diet,
-        allergies,
-      },
-    });
+    navigation.replace('DietPreferences', { preferences });
   };
 
   const handleCancel = () => {
@@ -75,134 +97,183 @@ const DietScreen = ({ navigation }) => {
     setAllergies([]);
   };
 
-  if (!hasDietList) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
-        <View style={styles.container}>
-          <Text style={styles.header}>Welcome to your Diet Planner!</Text>
-          <Text style={styles.description}>
-            Plan your weekly meals based on your goals and preferences. Get personalized meal suggestions and organize your diet easily.
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
-            <Text style={styles.buttonText}>Plan My Diet</Text>
-          </TouchableOpacity>
-        </View>
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={handleCancel}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalHeader}>Personalize Your Diet Plan</Text>
-              <View style={styles.row}>
-                <TouchableOpacity
-                  style={[styles.radioBtn, gender === 'male' && styles.radioBtnActive]}
-                  onPress={() => setGender('male')}
-                >
-                  <Text style={[styles.radioText, gender === 'male' && styles.radioTextActive]}>Male</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.radioBtn, gender === 'female' && styles.radioBtnActive]}
-                  onPress={() => setGender('female')}
-                >
-                  <Text style={[styles.radioText, gender === 'female' && styles.radioTextActive]}>Female</Text>
-                </TouchableOpacity>
+  // Prefill modal fields from storage or profile when modal opens
+  const handleOpenModal = async () => {
+    const saved = await AsyncStorage.getItem('dietPreferences');
+    if (saved) {
+      const prefs = JSON.parse(saved);
+      setGender(prefs.gender || 'male');
+      setAge(prefs.age || '');
+      setHeight(prefs.height || '');
+      setWeight(prefs.weight || '');
+      setActivity(prefs.activity || 1.2);
+      setDiet(prefs.diet || '');
+      setAllergies(prefs.allergies || []);
+      setModalVisible(true);
+      return;
+    }
+    // If no saved preferences, fetch from profile
+    try {
+      const userEmail = await AsyncStorage.getItem('userEmail');
+      if (userEmail) {
+        const response = await fetch(`${API_BASE_URL}/api/user/profile?email=${userEmail}`);
+        const data = await response.json();
+        setGender(data.gender || 'male');
+        // Calculate age from birthDate if available
+        if (data.birthDate) {
+          const birth = new Date(data.birthDate);
+          const today = new Date();
+          let years = today.getFullYear() - birth.getFullYear();
+          const m = today.getMonth() - birth.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
+          setAge(years.toString());
+        } else {
+          setAge('');
+        }
+        setHeight(data.height ? data.height.toString() : '');
+        setWeight(data.weight ? data.weight.toString() : '');
+      }
+    } catch (e) {
+      // fallback to defaults
+      setGender('male');
+      setAge('');
+      setHeight('');
+      setWeight('');
+    }
+    setActivity(1.2);
+    setDiet('');
+    setAllergies([]);
+    setModalVisible(true);
+  };
+
+  if (loading) {
+    return null;
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Welcome to your Diet Planner!</Text>
+        <Text style={styles.description}>
+          Plan your weekly meals based on your goals and preferences. Get personalized meal suggestions and organize your diet easily.
+        </Text>
+        <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
+          <Text style={styles.buttonText}>Plan My Diet</Text>
+        </TouchableOpacity>
+      </View>
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCancel}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalHeader}>Personalize Your Diet Plan</Text>
+            <View style={styles.row}>
+              <TouchableOpacity
+                style={[styles.radioBtn, gender === 'male' && styles.radioBtnActive]}
+                onPress={() => setGender('male')}
+              >
+                <Text style={[styles.radioText, gender === 'male' && styles.radioTextActive]}>Male</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.radioBtn, gender === 'female' && styles.radioBtnActive]}
+                onPress={() => setGender('female')}
+              >
+                <Text style={[styles.radioText, gender === 'female' && styles.radioTextActive]}>Female</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.inputRow}>
+              <View style={styles.inputCol}>
+                <Text style={styles.label}>Age</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 28"
+                  keyboardType="numeric"
+                  value={age}
+                  onChangeText={setAge}
+                />
               </View>
-              <View style={styles.inputRow}>
-                <View style={styles.inputCol}>
-                  <Text style={styles.label}>Age</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 28"
-                    keyboardType="numeric"
-                    value={age}
-                    onChangeText={setAge}
-                  />
-                </View>
-                <View style={styles.inputCol}>
-                  <Text style={styles.label}>Height (cm)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 170"
-                    keyboardType="numeric"
-                    value={height}
-                    onChangeText={setHeight}
-                  />
-                </View>
-                <View style={styles.inputCol}>
-                  <Text style={styles.label}>Weight (kg)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 65"
-                    keyboardType="numeric"
-                    value={weight}
-                    onChangeText={setWeight}
-                  />
-                </View>
+              <View style={styles.inputCol}>
+                <Text style={styles.label}>Height (cm)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 170"
+                  keyboardType="numeric"
+                  value={height}
+                  onChangeText={setHeight}
+                />
               </View>
-              <Text style={styles.label}>Activity Level</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                <View style={styles.chipRow}>
-                  {ACTIVITY_LEVELS.map(opt => (
-                    <TouchableOpacity
-                      key={opt.value}
-                      style={[styles.chip, activity === opt.value && styles.chipActive]}
-                      onPress={() => setActivity(opt.value)}
-                    >
-                      <Text style={[styles.chipText, activity === opt.value && styles.chipTextActive]}>{opt.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-              <Text style={styles.calorieLabel}>Estimated Daily Calories</Text>
-              <Text style={styles.calorieValue}>{calories ? calories + ' kcal' : '-'}</Text>
-              <Text style={styles.label}>Diet Type</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                <View style={styles.chipRow}>
-                  {DIET_TYPES.map(opt => (
-                    <TouchableOpacity
-                      key={opt.value}
-                      style={[styles.chip, diet === opt.value && styles.chipActive]}
-                      onPress={() => setDiet(opt.value)}
-                    >
-                      <Text style={[styles.chipText, diet === opt.value && styles.chipTextActive]}>{opt.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-              <Text style={styles.label}>Allergies</Text>
-              <View style={styles.checkboxList}>
-                {ALLERGIES.map(opt => (
+              <View style={styles.inputCol}>
+                <Text style={styles.label}>Weight (kg)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 65"
+                  keyboardType="numeric"
+                  value={weight}
+                  onChangeText={setWeight}
+                />
+              </View>
+            </View>
+            <Text style={styles.label}>Activity Level</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={styles.chipRow}>
+                {ACTIVITY_LEVELS.map(opt => (
                   <TouchableOpacity
                     key={opt.value}
-                    style={styles.checkboxRow}
-                    onPress={() => toggleAllergy(opt.value)}
+                    style={[styles.chip, activity === opt.value && styles.chipActive]}
+                    onPress={() => setActivity(opt.value)}
                   >
-                    <View style={[styles.checkbox, allergies.includes(opt.value) && styles.checkboxChecked]}>
-                      {allergies.includes(opt.value) && <View style={styles.checkboxDot} />}
-                    </View>
-                    <Text style={styles.checkboxLabel}>{opt.label}</Text>
+                    <Text style={[styles.chipText, activity === opt.value && styles.chipTextActive]}>{opt.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <View style={styles.modalBtnRow}>
-                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#6495ED' }]} onPress={handleSave}>
-                  <Text style={styles.modalBtnText}>Save</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#bbb' }]} onPress={handleCancel}>
-                  <Text style={styles.modalBtnText}>Cancel</Text>
-                </TouchableOpacity>
+            </ScrollView>
+            <Text style={styles.calorieLabel}>Estimated Daily Calories</Text>
+            <Text style={styles.calorieValue}>{calories ? calories + ' kcal' : '-'}</Text>
+            <Text style={styles.label}>Diet Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={styles.chipRow}>
+                {DIET_TYPES.map(opt => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.chip, diet === opt.value && styles.chipActive]}
+                    onPress={() => setDiet(opt.value)}
+                  >
+                    <Text style={[styles.chipText, diet === opt.value && styles.chipTextActive]}>{opt.label}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
+            </ScrollView>
+            <Text style={styles.label}>Allergies</Text>
+            <View style={styles.checkboxList}>
+              {ALLERGIES.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={styles.checkboxRow}
+                  onPress={() => toggleAllergy(opt.value)}
+                >
+                  <View style={[styles.checkbox, allergies.includes(opt.value) && styles.checkboxChecked]}>
+                    {allergies.includes(opt.value) && <View style={styles.checkboxDot} />}
+                  </View>
+                  <Text style={styles.checkboxLabel}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#6495ED' }]} onPress={handleSave}>
+                <Text style={styles.modalBtnText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#bbb' }]} onPress={handleCancel}>
+                <Text style={styles.modalBtnText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </Modal>
-      </SafeAreaView>
-    );
-  }
-  // If user has a diet list, you can show the plan or other content here
-  return null;
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({

@@ -1,53 +1,91 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import mealsData from '../data/meals.json';
-import { filterMeals } from '../utils/mealFilter';
+// import mealsData from '../data/meals.json';
+// import { filterMeals } from '../utils/mealFilter';
+
+const API_KEY = '799c65da92msh3564c8eb4e8ed35p15e3a6jsn8a04a0d37a0a'; // <-- Replace with your key or use process.env
+const API_HOST = 'tasty.p.rapidapi.com';
+const API_URL = 'https://tasty.p.rapidapi.com/recipes/list';
 
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const mealTypes = [
-  { key: 'breakfast', label: 'Breakfast', calories: 0.22 },
-  { key: 'lunch', label: 'Lunch', calories: 0.33 },
-  { key: 'dinner', label: 'Dinner', calories: 0.33 },
-  { key: 'snack', label: 'Snack', calories: 0.12 },
+  { key: 'breakfast', label: 'Breakfast', query: 'breakfast' },
+  { key: 'lunch', label: 'Lunch', query: 'lunch' },
+  { key: 'dinner', label: 'Dinner', query: 'dinner' },
+  { key: 'snack', label: 'Snack', query: 'snack' },
 ];
 
-function getRandomMeal(meals, maxCalories) {
-  const filtered = meals.filter(m => m.nutrition.calories <= maxCalories);
-  if (filtered.length === 0) return null;
-  return filtered[Math.floor(Math.random() * filtered.length)];
+async function fetchTastyRecipes(query) {
+  const res = await fetch(`${API_URL}?from=0&size=20&q=${encodeURIComponent(query)}`, {
+    method: 'GET',
+    headers: {
+      'X-RapidAPI-Key': API_KEY,
+      'X-RapidAPI-Host': API_HOST,
+    },
+  });
+  const data = await res.json();
+  return data.results || [];
 }
 
-function generateWeeklyPlan(meals, preferences) {
-  // For each day, pick random meals for each meal type, matching calories and filters
-  const plan = [];
-  for (let i = 0; i < 7; i++) {
-    const day = {};
-    mealTypes.forEach(mealType => {
-      const meal = getRandomMeal(meals, preferences.calories * mealType.calories);
-      day[mealType.key] = meal;
-    });
-    plan.push(day);
-  }
-  return plan;
+function filterTastyRecipes(recipes, preferences, maxCalories) {
+  // Filter by calories if nutrition info exists, diet, allergies
+  return recipes.filter(r => {
+    if (maxCalories && r.nutrition && r.nutrition.calories && r.nutrition.calories > maxCalories) return false;
+    if (preferences.diet && preferences.diet !== '' && r.tags && !r.tags.some(t => t.name.toLowerCase().includes(preferences.diet))) return false;
+    if (preferences.allergies && preferences.allergies.length > 0 && r.sections) {
+      const allIngredients = r.sections.flatMap(s => s.components.map(c => c.ingredient.name.toLowerCase()));
+      if (preferences.allergies.some(a => allIngredients.includes(a.toLowerCase()))) return false;
+    }
+    return true;
+  });
+}
+
+function getMealNutrition(recipe) {
+  if (!recipe.nutrition) return null;
+  return {
+    calories: recipe.nutrition.calories,
+    protein: recipe.nutrition.protein,
+    fat: recipe.nutrition.fat,
+    carbs: recipe.nutrition.carbohydrates,
+  };
 }
 
 const DietPreferencesScreen = ({ route, navigation }) => {
   const preferences = route.params?.preferences || {};
-  const [filteredMeals, setFilteredMeals] = useState([]);
   const [weeklyPlan, setWeeklyPlan] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-
-  useEffect(() => {
-    const meals = filterMeals(mealsData, preferences);
-    setFilteredMeals(meals);
-    setWeeklyPlan(generateWeeklyPlan(meals, preferences));
-  }, [preferences]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     navigation.setOptions({ title: 'Weekly Meal Plan' });
   }, [navigation]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function buildPlan() {
+      setLoading(true);
+      const plan = [];
+      for (let i = 0; i < 7; i++) {
+        const day = {};
+        for (const mealType of mealTypes) {
+          // Build query: meal type + diet + allergies
+          let query = mealType.query;
+          if (preferences.diet && preferences.diet !== '') query += ` ${preferences.diet}`;
+          // Optionally add more filters
+          const recipes = await fetchTastyRecipes(query);
+          const filtered = filterTastyRecipes(recipes, preferences, preferences.calories ? preferences.calories / 4 : undefined);
+          day[mealType.key] = filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : null;
+        }
+        plan.push(day);
+      }
+      if (isMounted) setWeeklyPlan(plan);
+      setLoading(false);
+    }
+    buildPlan();
+    return () => { isMounted = false; };
+  }, [preferences]);
 
   const openDayModal = (dayIdx) => {
     setSelectedDay(dayIdx);
@@ -70,18 +108,22 @@ const DietPreferencesScreen = ({ route, navigation }) => {
         </View>
         <View style={styles.card}>
           <Text style={styles.header}>Weekly Meal Plan</Text>
-          <View style={styles.weekGrid}>
-            {weeklyPlan.map((day, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.dayCard}
-                activeOpacity={0.8}
-                onPress={() => openDayModal(idx)}
-              >
-                <Text style={styles.dayCardText}>{daysOfWeek[idx]}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {loading ? (
+            <ActivityIndicator size="large" color="#6495ED" style={{ marginVertical: 32 }} />
+          ) : (
+            <View style={styles.weekGrid}>
+              {weeklyPlan.map((day, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.dayCard}
+                  activeOpacity={0.8}
+                  onPress={() => openDayModal(idx)}
+                >
+                  <Text style={styles.dayCardText}>{daysOfWeek[idx]}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
         <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={closeModal}>
           <View style={styles.modalOverlay}>
@@ -96,21 +138,22 @@ const DietPreferencesScreen = ({ route, navigation }) => {
                       <Text style={styles.noMeal}>No suitable meal found.</Text>
                     </View>
                   );
+                  const nutrition = getMealNutrition(meal);
                   return (
                     <View key={mealType.key} style={styles.mealDetailCard}>
                       <Text style={styles.mealType}>{mealType.label}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <Image source={{ uri: meal.image }} style={styles.mealImage} />
+                        <Image source={{ uri: meal.thumbnail_url }} style={styles.mealImage} />
                         <View style={{ flex: 1, marginLeft: 10 }}>
                           <Text style={styles.mealName}>{meal.name}</Text>
-                          <Text style={styles.mealInfo}>Calories: {meal.nutrition.calories}</Text>
-                          <Text style={styles.mealInfo}>Protein: {meal.nutrition.protein}g, Fat: {meal.nutrition.fat}g, Carbs: {meal.nutrition.carbs}g</Text>
+                          {nutrition && <Text style={styles.mealInfo}>Calories: {nutrition.calories}</Text>}
+                          {nutrition && <Text style={styles.mealInfo}>Protein: {nutrition.protein}g, Fat: {nutrition.fat}g, Carbs: {nutrition.carbs}g</Text>}
                         </View>
                       </View>
                       <Text style={styles.mealSubHeader}>Ingredients:</Text>
-                      <Text style={styles.mealText}>{meal.ingredients.join(', ')}</Text>
+                      <Text style={styles.mealText}>{meal.sections ? meal.sections.flatMap(s => s.components.map(c => c.ingredient.name)).join(', ') : '-'}</Text>
                       <Text style={styles.mealSubHeader}>Instructions:</Text>
-                      <Text style={styles.mealText}>{meal.instructions}</Text>
+                      <Text style={styles.mealText}>{meal.instructions ? meal.instructions.map(i => i.display_text).join(' ') : '-'}</Text>
                     </View>
                   );
                 })}
