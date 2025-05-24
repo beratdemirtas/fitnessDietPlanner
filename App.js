@@ -99,7 +99,7 @@ export default function App() {
                 options={{ title: 'Workout Details' }}
               />
               <Stack.Screen 
-                name="Diet" 
+                name="DietScreen" 
                 component={DietScreen}
                 options={{ title: 'Diet' }}
               />
