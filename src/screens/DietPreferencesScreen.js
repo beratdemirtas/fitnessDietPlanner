@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // import mealsData from '../data/meals.json';
 // import { filterMeals } from '../utils/mealFilter';
 
@@ -57,10 +58,18 @@ const DietPreferencesScreen = ({ route, navigation }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [completedDays, setCompletedDays] = useState([]);
 
   useEffect(() => {
     navigation.setOptions({ title: 'Weekly Meal Plan' });
   }, [navigation]);
+
+  // Load completed days from AsyncStorage
+  useEffect(() => {
+    AsyncStorage.getItem('completedDays').then(data => {
+      if (data) setCompletedDays(JSON.parse(data));
+    });
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -97,6 +106,14 @@ const DietPreferencesScreen = ({ route, navigation }) => {
     setSelectedDay(null);
   };
 
+  const markDayComplete = async (dayIdx) => {
+    if (!completedDays.includes(dayIdx)) {
+      const updated = [...completedDays, dayIdx];
+      setCompletedDays(updated);
+      await AsyncStorage.setItem('completedDays', JSON.stringify(updated));
+    }
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -115,11 +132,13 @@ const DietPreferencesScreen = ({ route, navigation }) => {
               {weeklyPlan.map((day, idx) => (
                 <TouchableOpacity
                   key={idx}
-                  style={styles.dayCard}
+                  style={[styles.dayCard, completedDays.includes(idx) && { backgroundColor: '#b6e2c6', borderColor: '#4CAF50' }]}
                   activeOpacity={0.8}
                   onPress={() => openDayModal(idx)}
                 >
-                  <Text style={styles.dayCardText}>{daysOfWeek[idx]}</Text>
+                  <Text style={styles.dayCardText}>
+                    {daysOfWeek[idx]} {completedDays.includes(idx) ? '✔️' : ''}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -161,6 +180,11 @@ const DietPreferencesScreen = ({ route, navigation }) => {
               <TouchableOpacity style={styles.closeBtn} onPress={closeModal}>
                 <Text style={styles.closeBtnText}>Close</Text>
               </TouchableOpacity>
+              {selectedDay !== null && !completedDays.includes(selectedDay) && (
+                <TouchableOpacity style={[styles.closeBtn, { backgroundColor: '#4CAF50', marginTop: 8 }]} onPress={() => { markDayComplete(selectedDay); closeModal(); }}>
+                  <Text style={[styles.closeBtnText, { color: '#fff' }]}>Complete</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </Modal>

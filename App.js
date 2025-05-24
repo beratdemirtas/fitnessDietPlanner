@@ -13,6 +13,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MyMealsScreen from './src/screens/MyMealsScreen';
 import GoalScreen from './src/screens/GoalScreen';
 import DietPreferencesScreen from './src/screens/DietPreferencesScreen';
+import WaterTracker from './src/screens/WaterTracker';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -113,6 +114,11 @@ export default function App() {
                 name="DietPreferences" 
                 component={DietPreferencesScreen}
                 options={{ title: 'Diet Preferences' }}
+              />
+              <Stack.Screen 
+                name="WaterTracker" 
+                component={WaterTracker}
+                options={{ title: 'Water Tracker' }}
               />
             </>
           ) : (

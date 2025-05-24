@@ -13,6 +13,7 @@ const HomeScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('');
   const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [weeklyLabels, setWeeklyLabels] = useState(['', '', '', '', '', '', '']);
+  const [todayCalories, setTodayCalories] = useState(0);
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -81,6 +82,27 @@ const HomeScreen = ({ navigation }) => {
     }, [])
   );
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchTodayCalories = async () => {
+        try {
+          const userEmail = await AsyncStorage.getItem('userEmail');
+          if (!userEmail) return;
+          const today = new Date().toISOString().split('T')[0];
+          const response = await fetch(`${API_BASE_URL}/api/meals?email=${userEmail}&date=${today}`);
+          const meals = await response.json();
+          const total = Array.isArray(meals)
+            ? meals.reduce((sum, meal) => sum + (meal.calories || 0), 0)
+            : 0;
+          setTodayCalories(total);
+        } catch (e) {
+          setTodayCalories(0);
+        }
+      };
+      fetchTodayCalories();
+    }, [])
+  );
+
   const maxIndex = weeklyData.indexOf(Math.max(...weeklyData));
 
   return (
@@ -97,24 +119,37 @@ const HomeScreen = ({ navigation }) => {
         {/* My Plan */}
         <Text style={styles.sectionTitle}>My Plan</Text>
         <View style={styles.planGrid}>
-          <TouchableOpacity style={[styles.planCard, {backgroundColor: '#bcd4e6'}]} onPress={() => navigation.navigate('Workout')}>
-            <MaterialCommunityIcons name="dumbbell" size={28} color="#222" />
-            <Text style={styles.planCardTitle}>Workout</Text>
-            <Text style={styles.planCardSub}>2 hours</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.planCard, {backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1}]} onPress={() => navigation.navigate('DietScreen')}>
-            <Ionicons name="fast-food-outline" size={28} color="#222" />
-            <Text style={styles.planCardTitle}>Diet Plans</Text>
-            <Text style={styles.planCardSub}>1 hour</Text>
-        </TouchableOpacity>
-          <TouchableOpacity style={[styles.planCard, {backgroundColor: '#e0f7e9'}]} onPress={() => navigation.navigate('MealTracker')}>
-            <Ionicons name="leaf-outline" size={28} color="#222" />
-            <Text style={styles.planCardTitle}>Meals</Text>
-            <Text style={styles.planCardSub}>1832 kcal</Text>
-        </TouchableOpacity>
-          <TouchableOpacity style={styles.letsGoCard}>
-            <Text style={styles.letsGoText}>Let's Go</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+    style={[styles.planCard, { backgroundColor: '#a7c7e7' }]} // Workout: açık mavi
+    onPress={() => navigation.navigate('Workout')}
+  >
+    <MaterialCommunityIcons name="dumbbell" size={28} color="#222" />
+    <Text style={styles.planCardTitle}>Workout</Text>
+    
+  </TouchableOpacity>
+  <TouchableOpacity
+    style={[styles.planCard, { backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1 }]}
+    onPress={() => navigation.navigate('DietScreen')}
+  >
+    <Ionicons name="fast-food-outline" size={28} color="#222" />
+    <Text style={styles.planCardTitle}>Diet Plans</Text>
+    
+  </TouchableOpacity>
+  <TouchableOpacity
+    style={[styles.planCard, { backgroundColor: '#e0f7e9' }]}
+    onPress={() => navigation.navigate('MealTracker')}
+  >
+    <Ionicons name="leaf-outline" size={28} color="#222" />
+    <Text style={styles.planCardTitle}>Meals</Text>
+  </TouchableOpacity>
+  <TouchableOpacity
+    style={[styles.planCard, { backgroundColor: '#b3e0f2' }]} // Water Tracker: açık turkuaz
+    onPress={() => navigation.navigate('WaterTracker')}
+  >
+    <Ionicons name="water-outline" size={28} color="#222" />
+    <Text style={styles.planCardTitle}>Water Tracker</Text>
+    <Text style={styles.planCardSub}></Text>
+  </TouchableOpacity>
         </View>
 
         {/* Weekly Stats */}
