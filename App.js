@@ -12,6 +12,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import MyMealsScreen from './src/screens/MyMealsScreen';
 import GoalScreen from './src/screens/GoalScreen';
+import DietPreferencesScreen from './src/screens/DietPreferencesScreen';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -107,6 +108,11 @@ export default function App() {
                 name="GoalScreen" 
                 component={GoalScreen}
                 options={{ title: 'Set Daily Goal' }}
+              />
+              <Stack.Screen 
+                name="DietPreferences" 
+                component={DietPreferencesScreen}
+                options={{ title: 'Diet Preferences' }}
               />
             </>
           ) : (

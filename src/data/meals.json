@@ -1,0 +1,68 @@
+[
+  {
+    "id": 1,
+    "name": "Grilled Chicken Salad",
+    "calories": 350,
+    "tags": ["gluten-free", "high-protein"],
+    "allergens": [],
+    "image": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80",
+    "ingredients": ["Chicken breast", "Mixed greens", "Tomato", "Cucumber", "Olive oil", "Lemon juice"],
+    "instructions": "Grill the chicken breast. Toss with greens, tomato, cucumber, olive oil, and lemon juice.",
+    "nutrition": { "protein": 32, "fat": 12, "carbs": 14, "calories": 350 }
+  },
+  {
+    "id": 2,
+    "name": "Vegan Buddha Bowl",
+    "calories": 400,
+    "tags": ["vegan", "gluten-free"],
+    "allergens": ["soy"],
+    "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
+    "ingredients": ["Quinoa", "Chickpeas", "Avocado", "Spinach", "Carrot", "Soy sauce"],
+    "instructions": "Cook quinoa. Top with chickpeas, avocado, spinach, carrot, and a drizzle of soy sauce.",
+    "nutrition": { "protein": 15, "fat": 14, "carbs": 52, "calories": 400 }
+  },
+  {
+    "id": 3,
+    "name": "Oatmeal with Berries",
+    "calories": 250,
+    "tags": ["vegetarian"],
+    "allergens": ["gluten"],
+    "image": "https://images.unsplash.com/photo-1464306076886-debca5e8a6b0?auto=format&fit=crop&w=400&q=80",
+    "ingredients": ["Oats", "Milk or plant milk", "Mixed berries", "Honey"],
+    "instructions": "Cook oats with milk. Top with berries and honey.",
+    "nutrition": { "protein": 7, "fat": 4, "carbs": 45, "calories": 250 }
+  },
+  {
+    "id": 4,
+    "name": "Quinoa & Roasted Veggies",
+    "calories": 320,
+    "tags": ["vegan", "gluten-free"],
+    "allergens": [],
+    "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
+    "ingredients": ["Quinoa", "Bell pepper", "Zucchini", "Eggplant", "Olive oil"],
+    "instructions": "Roast veggies. Cook quinoa. Mix together with olive oil.",
+    "nutrition": { "protein": 9, "fat": 10, "carbs": 48, "calories": 320 }
+  },
+  {
+    "id": 5,
+    "name": "Turkey Sandwich",
+    "calories": 370,
+    "tags": ["high-protein"],
+    "allergens": ["gluten"],
+    "image": "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
+    "ingredients": ["Whole grain bread", "Turkey breast", "Lettuce", "Tomato", "Mustard"],
+    "instructions": "Layer turkey, lettuce, and tomato on bread. Add mustard.",
+    "nutrition": { "protein": 24, "fat": 7, "carbs": 48, "calories": 370 }
+  },
+  {
+    "id": 6,
+    "name": "Greek Yogurt Parfait",
+    "calories": 200,
+    "tags": ["vegetarian", "gluten-free"],
+    "allergens": ["dairy"],
+    "image": "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?auto=format&fit=crop&w=400&q=80",
+    "ingredients": ["Greek yogurt", "Granola", "Berries", "Honey"],
+    "instructions": "Layer yogurt, granola, and berries. Drizzle with honey.",
+    "nutrition": { "protein": 10, "fat": 3, "carbs": 32, "calories": 200 }
+  }
+] 

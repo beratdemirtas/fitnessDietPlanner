@@ -102,7 +102,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.planCardTitle}>Workout</Text>
             <Text style={styles.planCardSub}>2 hours</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.planCard, {backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1}]} onPress={() => navigation.navigate('Diet')}>
+          <TouchableOpacity style={[styles.planCard, {backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1}]} onPress={() => navigation.navigate('DietScreen')}>
             <Ionicons name="fast-food-outline" size={28} color="#222" />
             <Text style={styles.planCardTitle}>Diet Plans</Text>
             <Text style={styles.planCardSub}>1 hour</Text>
