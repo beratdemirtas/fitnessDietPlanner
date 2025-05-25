@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -51,6 +51,13 @@ export default function MealTrackerScreen() {
   });
   const [calculatedCalories, setCalculatedCalories] = useState(null);
   const [inputErrors, setInputErrors] = useState({});
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [goalInput, setGoalInput] = useState({
+    calories: macroGoals.calories,
+    protein: macroGoals.protein,
+    carbs: macroGoals.carbs,
+    fat: macroGoals.fat,
+  });
 
   useEffect(() => {
     AsyncStorage.getItem('userEmail').then(email => {
@@ -450,17 +457,11 @@ export default function MealTrackerScreen() {
   };
 
   const calculateCalories = () => {
-    if (!validateInputs()) return;
     const { age, gender, height, weight, activityLevel } = userInfo;
-    
-    if (!age || !height || !weight) {
-      setError('Please fill in all required fields');
-      return;
-    }
 
     // Convert height from cm to meters
     const heightInMeters = height / 100;
-    
+
     // Calculate BMR using Mifflin-St Jeor Equation
     let bmr;
     if (gender === 'male') {
@@ -471,11 +472,11 @@ export default function MealTrackerScreen() {
 
     // Apply activity multiplier
     const activityMultipliers = {
-      sedentary: 1.2,      // Little or no exercise
-      light: 1.375,        // Light exercise 1-3 days/week
-      moderate: 1.55,      // Moderate exercise 3-5 days/week
-      active: 1.725,       // Hard exercise 6-7 days/week
-      veryActive: 1.9      // Very hard exercise & physical job
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      veryActive: 1.9,
     };
 
     const tdee = Math.round(bmr * activityMultipliers[activityLevel]);
@@ -486,11 +487,74 @@ export default function MealTrackerScreen() {
       calories: tdee,
       protein: Math.round((tdee * 0.3) / 4), // 30% of calories from protein
       carbs: Math.round((tdee * 0.45) / 4),  // 45% of calories from carbs
-      fat: Math.round((tdee * 0.25) / 9)     // 25% of calories from fat
+      fat: Math.round((tdee * 0.25) / 9),    // 25% of calories from fat
     };
 
     setGoalInput(newMacroGoals);
   };
+
+  // Modalı açmadan önce profil bilgilerini doldur:
+  const openGoalModal = async () => {
+    try {
+      const profileStr = await AsyncStorage.getItem('userProfile');
+      if (profileStr) {
+        const profile = JSON.parse(profileStr);
+        setUserInfo(prev => ({
+          ...prev,
+          age: profile.age || '',
+          gender: profile.gender || 'male',
+          height: profile.height || '',
+          weight: profile.weight || ''
+        }));
+      } else {
+        // Eğer AsyncStorage'da veri yoksa API'den çek
+        const userEmail = await AsyncStorage.getItem('userEmail');
+        if (userEmail) {
+          const response = await fetch(`${API_BASE_URL}/api/user/profile?email=${userEmail}`);
+          const data = await response.json();
+          setUserInfo(prev => ({
+            ...prev,
+            age: data.age || '',
+            gender: data.gender || 'male',
+            height: data.height || '',
+            weight: data.weight || ''
+          }));
+        }
+      }
+      setShowGoalModal(true);
+    } catch (e) {
+      console.error('Error loading profile data:', e);
+      setShowGoalModal(true);
+    }
+  };
+
+  useEffect(() => {
+    if (userInfo.age && userInfo.height && userInfo.weight) {
+      calculateCalories();
+    }
+  }, [userInfo]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profileStr = await AsyncStorage.getItem('userProfile');
+        if (profileStr) {
+          const profile = JSON.parse(profileStr);
+          setUserInfo(prev => ({
+            ...prev,
+            age: profile.age || '',
+            gender: profile.gender || 'male',
+            height: profile.height || '',
+            weight: profile.weight || ''
+          }));
+        }
+      } catch (e) {
+        console.error('Error loading profile data:', e);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -592,7 +656,7 @@ export default function MealTrackerScreen() {
       <TouchableOpacity style={styles.bottomBtn} onPress={() => setShowCreateMealModal(true)}>
         <Text style={styles.bottomBtnText}>Create Meal</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.bottomBtn} onPress={() => navigation.navigate('GoalScreen')}>
+      <TouchableOpacity style={styles.bottomBtn} onPress={openGoalModal}>
         <Text style={styles.bottomBtnText}>Set Daily Goal</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.bottomBtn} onPress={() => navigation.navigate('MyMeals')}>
@@ -600,185 +664,336 @@ export default function MealTrackerScreen() {
       </TouchableOpacity>
     </View>
     <Modal visible={showCreateMealModal} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Create Meal</Text>
-          <Text style={styles.inputLabel}>Select meal type</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12, justifyContent: 'center' }}>
-            {mealTypes.map(mt => (
-              <TouchableOpacity
-                key={mt.value}
-                onPress={() => setSelectedMealType(mt.value)}
-                style={{
-                  backgroundColor: selectedMealType === mt.value ? '#4CAF50' : '#f5f5f5',
-                  paddingVertical: 7,
-                  paddingHorizontal: 16,
-                  borderRadius: 20,
-                  marginHorizontal: 4,
-                  marginBottom: 6,
-                  borderWidth: selectedMealType === mt.value ? 0 : 1,
-                  borderColor: '#ddd',
-                }}
-              >
-                <Text style={{ color: selectedMealType === mt.value ? '#fff' : '#222', fontWeight: 'bold', fontSize: 15 }}>{mt.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <Text style={styles.inputLabel}>Select Date</Text>
-          <TouchableOpacity 
-            style={styles.dateSelector} 
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Ionicons name="calendar-outline" size={22} color="#2d4d6a" style={{marginRight: 6}} />
-            <Text style={styles.dateSelectorText}>
-              {selectedDate.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={(event, selected) => {
-                setShowDatePicker(false);
-                if (selected) {
-                  setSelectedDate(selected);
-                }
-              }}
-              maximumDate={new Date()}
-            />
-          )}
-          <Text style={styles.inputLabel}>Add Food</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 8 }}>
-            <TextInput
-              style={[styles.input, { flex: 1, marginBottom: 0 }]}
-              placeholder="Search for food or drink..."
-              value={mealSearch}
-              onChangeText={handleMealSearch}
-            />
-            {mealSearch.length > 0 && (
-              <TouchableOpacity onPress={() => { setMealSearch(''); setMealSearchResults([]); }} style={{ marginLeft: 6 }}>
-                <Ionicons name="close-circle" size={22} color="#bbb" />
-              </TouchableOpacity>
-            )}
-          </View>
-          {creatingMealLoading && <Text style={styles.infoText}>Searching...</Text>}
-          {mealSearchResults.length > 0 && (
-            <View style={{width:'100%', marginBottom: 8}}>
-              {mealSearchResults.map(food => {
-                const isFav = favorites.some(f => f.id === food.fdcId);
-                return (
-                  <View key={food.fdcId} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 8, marginBottom: 4, padding: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.mealName}>{food.description}</Text>
-                      {(food.householdServingFullText || (food.servingSize && food.servingSizeUnit)) && (
-                        <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14 }}>Portion: {food.householdServingFullText || `${food.servingSize} ${food.servingSizeUnit}`}</Text>
-                      )}
-                      <Text style={styles.mealMacroSmall}>💪 {extractMacros(food).protein}g  🥑 {extractMacros(food).fat}g  🍞 {extractMacros(food).carbs}g  🔥 {extractMacros(food).calories} kcal</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => handleAddMealItem(food)} style={{ marginHorizontal: 8 }}>
-                      <Ionicons name="add-circle" size={26} color="#4CAF50" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => handleFavorite(food)}>
-                      <Text style={{ fontSize: 22, color: isFav ? '#E57373' : '#bbb' }}>{isFav ? '❤️' : '🤍'}</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-          {mealItems.length > 0 && (
-            <View style={{width:'100%', marginTop:10}}>
-              <Text style={styles.inputLabel}>Foods/Drinks in this meal:</Text>
-              {mealItems.map((item, idx) => (
-                <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, backgroundColor:'#eaf3ef', borderRadius:8, padding:8 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.mealName}>{item.food.description}</Text>
-                    {item.portion && <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14 }}>Portion: {item.portion}</Text>}
-                    <Text style={styles.mealMacroSmall}>💪 {item.macros.protein}g  🥑 {item.macros.fat}g  🍞 {item.macros.carbs}g  🔥 {item.macros.calories} kcal</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => handleRemoveMealItem(idx)} style={{ marginLeft: 8 }}>
-                    <Ionicons name="trash" size={22} color="#E57373" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Create Meal</Text>
+              <Text style={styles.inputLabel}>Select meal type</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12, justifyContent: 'center' }}>
+                {mealTypes.map(mt => (
+                  <TouchableOpacity
+                    key={mt.value}
+                    onPress={() => setSelectedMealType(mt.value)}
+                    style={{
+                      backgroundColor: selectedMealType === mt.value ? '#4CAF50' : '#f5f5f5',
+                      paddingVertical: 7,
+                      paddingHorizontal: 16,
+                      borderRadius: 20,
+                      marginHorizontal: 4,
+                      marginBottom: 6,
+                      borderWidth: selectedMealType === mt.value ? 0 : 1,
+                      borderColor: '#ddd',
+                    }}
+                  >
+                    <Text style={{ color: selectedMealType === mt.value ? '#fff' : '#222', fontWeight: 'bold', fontSize: 15 }}>{mt.label}</Text>
                   </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.inputLabel}>Select Date</Text>
+              <TouchableOpacity 
+                style={styles.dateSelector} 
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={22} color="#2d4d6a" style={{marginRight: 6}} />
+                <Text style={styles.dateSelectorText}>
+                  {selectedDate.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={(event, selected) => {
+                    setShowDatePicker(false);
+                    if (selected) {
+                      setSelectedDate(selected);
+                    }
+                  }}
+                  maximumDate={new Date()}
+                />
+              )}
+              <Text style={styles.inputLabel}>Add Food</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 8 }}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                  placeholder="Search for food or drink..."
+                  value={mealSearch}
+                  onChangeText={handleMealSearch}
+                />
+                {mealSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => { setMealSearch(''); setMealSearchResults([]); }} style={{ marginLeft: 6 }}>
+                    <Ionicons name="close-circle" size={22} color="#bbb" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {creatingMealLoading && <Text style={styles.infoText}>Searching...</Text>}
+              {mealSearchResults.length > 0 && (
+                <View style={{width:'100%', marginBottom: 8}}>
+                  {mealSearchResults.map(food => {
+                    const isFav = favorites.some(f => f.id === food.fdcId);
+                    return (
+                      <View key={food.fdcId} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', borderRadius: 8, marginBottom: 4, padding: 8 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.mealName}>{food.description}</Text>
+                          {(food.householdServingFullText || (food.servingSize && food.servingSizeUnit)) && (
+                            <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14 }}>Portion: {food.householdServingFullText || `${food.servingSize} ${food.servingSizeUnit}`}</Text>
+                          )}
+                          <Text style={styles.mealMacroSmall}>💪 {extractMacros(food).protein}g  🥑 {extractMacros(food).fat}g  🍞 {extractMacros(food).carbs}g  🔥 {extractMacros(food).calories} kcal</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => handleAddMealItem(food)} style={{ marginHorizontal: 8 }}>
+                          <Ionicons name="add-circle" size={26} color="#4CAF50" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleFavorite(food)}>
+                          <Text style={{ fontSize: 22, color: isFav ? '#E57373' : '#bbb' }}>{isFav ? '❤️' : '🤍'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
                 </View>
-              ))}
-              <View style={{ backgroundColor:'#f5f5f5', borderRadius:8, padding:8, marginTop:8 }}>
-                <Text style={{ fontWeight:'bold', color:'#222' }}>Total for this meal:</Text>
-                <Text style={styles.mealMacroSmall}>💪 {totalMealMacros.protein}g  🥑 {totalMealMacros.fat}g  🍞 {totalMealMacros.carbs}g  🔥 {totalMealMacros.calories} kcal</Text>
+              )}
+              {mealItems.length > 0 && (
+                <View style={{width:'100%', marginTop:10}}>
+                  <Text style={styles.inputLabel}>Foods/Drinks in this meal:</Text>
+                  {mealItems.map((item, idx) => (
+                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, backgroundColor:'#eaf3ef', borderRadius:8, padding:8 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.mealName}>{item.food.description}</Text>
+                        {item.portion && <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14 }}>Portion: {item.portion}</Text>}
+                        <Text style={styles.mealMacroSmall}>💪 {item.macros.protein}g  🥑 {item.macros.fat}g  🍞 {item.macros.carbs}g  🔥 {item.macros.calories} kcal</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => handleRemoveMealItem(idx)} style={{ marginLeft: 8 }}>
+                        <Ionicons name="trash" size={22} color="#E57373" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <View style={{ backgroundColor:'#f5f5f5', borderRadius:8, padding:8, marginTop:8 }}>
+                    <Text style={{ fontWeight:'bold', color:'#222' }}>Total for this meal:</Text>
+                    <Text style={styles.mealMacroSmall}>💪 {totalMealMacros.protein}g  🥑 {totalMealMacros.fat}g  🍞 {totalMealMacros.carbs}g  🔥 {totalMealMacros.calories} kcal</Text>
+                  </View>
+                </View>
+              )}
+              <TouchableOpacity style={styles.button} onPress={async () => {
+                if (mealItems.length === 0) { setError('Please add at least one food or drink.'); return; }
+                setCreatingMealLoading(true);
+                try {
+                  // 1. Local'e kaydet
+                  const myMealsKey = `myMeals_${userEmail}`;
+                  const myMeals = await AsyncStorage.getItem(myMealsKey);
+                  const newMyMeals = myMeals ? JSON.parse(myMeals) : [];
+                  newMyMeals.unshift({
+                    id: Date.now(),
+                    name: customMealName,
+                    mealType: selectedMealType,
+                    foods: mealItems.map(item => ({
+                      description: item.food.description,
+                      portion: item.portion,
+                      ...item.macros
+                    })),
+                    protein: totalMealMacros.protein,
+                    fat: totalMealMacros.fat,
+                    carbs: totalMealMacros.carbs,
+                    calories: totalMealMacros.calories,
+                    date: selectedDate.toISOString().split('T')[0],
+                  });
+                  await AsyncStorage.setItem(myMealsKey, JSON.stringify(newMyMeals));
+
+                  // 2. Backend'e de kaydet!
+                  await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      userEmail,
+                      name: customMealName,
+                      mealType: selectedMealType,
+                      foods: mealItems.map(item => ({
+                        description: item.food.description,
+                        portion: item.portion,
+                        protein: Number(item.macros.protein) || 0,
+                        fat: Number(item.macros.fat) || 0,
+                        carbs: Number(item.macros.carbs) || 0,
+                        calories: Number(item.macros.calories) || 0,
+                      })),
+                      protein: totalMealMacros.protein,
+                      fat: totalMealMacros.fat,
+                      carbs: totalMealMacros.carbs,
+                      calories: totalMealMacros.calories,
+                      date: selectedDate.toISOString().split('T')[0],
+                    })
+                  });
+
+                  setShowCreateMealModal(false);
+                  setCustomMealName('');
+                  setMealSearch('');
+                  setMealSearchResults([]);
+                  setMealItems([]);
+                  fetchMealsForDay();
+                } catch (e) {
+                  setError('Failed to save meal.');
+                }
+                setCreatingMealLoading(false);
+              }}>
+                <Text style={styles.buttonText}>Save</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, {backgroundColor:'#888'}]} onPress={() => { setShowCreateMealModal(false); setMealItems([]); }}>
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Modal>
+    <Modal
+      visible={showGoalModal}
+      animationType="slide"
+      transparent
+      onRequestClose={() => setShowGoalModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContentModern}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+            <Text style={styles.modalTitleModern}>Set Daily Goal</Text>
+            <Text style={styles.modalSubtitle}>Enter your information to calculate your daily calorie needs</Text>
+            <View style={styles.rowInputs}>
+              <View style={styles.inputGroupSmall}>
+                <Text style={styles.inputLabelModern}>Age</Text>
+                <TextInput
+                  style={[styles.inputModern, inputErrors.age && styles.inputError, { backgroundColor: '#f5f5f5' }]}
+                  placeholder="e.g. 25"
+                  keyboardType="numeric"
+                  value={userInfo.age.toString()}
+                  editable={false}
+                />
+                {inputErrors.age && <Text style={styles.errorTextSmall}>{inputErrors.age}</Text>}
+              </View>
+              <View style={styles.inputGroupSmall}>
+                <Text style={styles.inputLabelModern}>Height (cm)</Text>
+                <TextInput
+                  style={[styles.inputModern, inputErrors.height && styles.inputError, { backgroundColor: '#f5f5f5' }]}
+                  placeholder="e.g. 170"
+                  keyboardType="numeric"
+                  value={userInfo.height.toString()}
+                  editable={false}
+                />
+                {inputErrors.height && <Text style={styles.errorTextSmall}>{inputErrors.height}</Text>}
+              </View>
+              <View style={styles.inputGroupSmall}>
+                <Text style={styles.inputLabelModern}>Weight (kg)</Text>
+                <TextInput
+                  style={[styles.inputModern, inputErrors.weight && styles.inputError, { backgroundColor: '#f5f5f5' }]}
+                  placeholder="e.g. 65"
+                  keyboardType="numeric"
+                  value={userInfo.weight.toString()}
+                  editable={false}
+                />
+                {inputErrors.weight && <Text style={styles.errorTextSmall}>{inputErrors.weight}</Text>}
               </View>
             </View>
-          )}
-          <TouchableOpacity style={styles.button} onPress={async () => {
-            if (mealItems.length === 0) { setError('Please add at least one food or drink.'); return; }
-            setCreatingMealLoading(true);
-            try {
-              // 1. Local'e kaydet
-              const myMealsKey = `myMeals_${userEmail}`;
-              const myMeals = await AsyncStorage.getItem(myMealsKey);
-              const newMyMeals = myMeals ? JSON.parse(myMeals) : [];
-              newMyMeals.unshift({
-                id: Date.now(),
-                name: customMealName,
-                mealType: selectedMealType,
-                foods: mealItems.map(item => ({
-                  description: item.food.description,
-                  portion: item.portion,
-                  ...item.macros
-                })),
-                protein: totalMealMacros.protein,
-                fat: totalMealMacros.fat,
-                carbs: totalMealMacros.carbs,
-                calories: totalMealMacros.calories,
-                date: selectedDate.toISOString().split('T')[0],
-              });
-              await AsyncStorage.setItem(myMealsKey, JSON.stringify(newMyMeals));
-
-              // 2. Backend'e de kaydet!
-              await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  userEmail,
-                  name: customMealName,
-                  mealType: selectedMealType,
-                  foods: mealItems.map(item => ({
-                    description: item.food.description,
-                    portion: item.portion,
-                    protein: Number(item.macros.protein) || 0,
-                    fat: Number(item.macros.fat) || 0,
-                    carbs: Number(item.macros.carbs) || 0,
-                    calories: Number(item.macros.calories) || 0,
-                  })),
-                  protein: totalMealMacros.protein,
-                  fat: totalMealMacros.fat,
-                  carbs: totalMealMacros.carbs,
-                  calories: totalMealMacros.calories,
-                  date: selectedDate.toISOString().split('T')[0],
-                })
-              });
-
-              setShowCreateMealModal(false);
-              setCustomMealName('');
-              setMealSearch('');
-              setMealSearchResults([]);
-              setMealItems([]);
-              fetchMealsForDay();
-            } catch (e) {
-              setError('Failed to save meal.');
-            }
-            setCreatingMealLoading(false);
-          }}>
-            <Text style={styles.buttonText}>Consume & Save</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, {backgroundColor:'#888'}]} onPress={() => { setShowCreateMealModal(false); setMealItems([]); }}>
-            <Text style={styles.buttonText}>Cancel</Text>
-          </TouchableOpacity>
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            <Text style={styles.inputLabelModern}>Gender</Text>
+            <View style={styles.genderRowModern}>
+              <TouchableOpacity
+                style={[
+                  styles.genderBtnModern,
+                  userInfo.gender === 'male' && styles.genderBtnActive,
+                  { opacity: 0.7 }
+                ]}
+                disabled={true}
+              >
+                <Text style={[
+                  styles.genderBtnText,
+                  userInfo.gender === 'male' && styles.genderBtnTextActive,
+                ]}>Male</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.genderBtnModern,
+                  userInfo.gender === 'female' && styles.genderBtnActive,
+                  { opacity: 0.7 }
+                ]}
+                disabled={true}
+              >
+                <Text style={[
+                  styles.genderBtnText,
+                  userInfo.gender === 'female' && styles.genderBtnTextActive,
+                ]}>Female</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.inputLabelModern}>Activity Level</Text>
+            <View style={{ width: '100%', marginBottom: 10 }}>
+              {[
+                { label: 'Sedentary', value: 'sedentary', desc: 'Little or no exercise' },
+                { label: 'Light', value: 'light', desc: 'Exercise 1-3 days/week' },
+                { label: 'Moderate', value: 'moderate', desc: 'Exercise 3-5 days/week' },
+                { label: 'Active', value: 'active', desc: 'Exercise 6-7 days/week' },
+                { label: 'Very Active', value: 'veryActive', desc: 'Hard exercise & physical job' },
+              ].map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[
+                    {
+                      backgroundColor: userInfo.activityLevel === opt.value ? '#4CAF50' : '#f5f5f5',
+                      borderRadius: 10,
+                      paddingVertical: 12,
+                      paddingHorizontal: 12,
+                      marginBottom: 8,
+                      borderWidth: userInfo.activityLevel === opt.value ? 0 : 1,
+                      borderColor: '#e0e0e0',
+                    }
+                  ]}
+                  onPress={() => setUserInfo(prev => ({ ...prev, activityLevel: opt.value }))}
+                >
+                  <Text style={{
+                    color: userInfo.activityLevel === opt.value ? '#fff' : '#222',
+                    fontWeight: 'bold',
+                    fontSize: 16,
+                    textAlign: 'left'
+                  }}>{opt.label}</Text>
+                  <Text style={{
+                    color: userInfo.activityLevel === opt.value ? '#eaf3ef' : '#888',
+                    fontSize: 13,
+                    marginTop: 2,
+                    textAlign: 'left'
+                  }}>{opt.desc}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {calculatedCalories && (
+              <View style={styles.resultCardModern}>
+                <Text style={styles.resultTitleModern}>Estimated Daily Calories</Text>
+                <Text style={styles.resultCaloriesModern}>{calculatedCalories} kcal</Text>
+                <View style={styles.resultMacrosRowModern}>
+                  <View style={styles.resultMacroBox}>
+                    <Text style={styles.resultMacroIcon}>💪</Text>
+                    <Text style={styles.resultMacroText}>Protein: {goalInput.protein}g</Text>
+                  </View>
+                  <View style={styles.resultMacroBox}>
+                    <Text style={styles.resultMacroIcon}>🍞</Text>
+                    <Text style={styles.resultMacroText}>Carbs: {goalInput.carbs}g</Text>
+                  </View>
+                  <View style={styles.resultMacroBox}>
+                    <Text style={styles.resultMacroIcon}>🥑</Text>
+                    <Text style={styles.resultMacroText}>Fat: {goalInput.fat}g</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+            <TouchableOpacity style={styles.saveBtnModern} onPress={saveGoals}>
+              <Text style={styles.saveBtnTextModern}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtnModern} onPress={() => setShowGoalModal(false)}>
+              <Text style={styles.cancelBtnTextModern}>Cancel</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -1133,9 +1348,10 @@ const styles = StyleSheet.create({
   },
   modalContentModern: {
     backgroundColor: '#fff',
-    borderRadius: 22,
-    padding: 28,
-    width: '90%',
+    borderRadius: 16,
+    padding: 20, // Daha az padding
+    width: '85%', // Genişliği küçült
+    maxHeight: '80%', // Yüksekliği sınırlı tut
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

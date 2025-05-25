@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../../App'; 
 import API_BASE_URL from '../config/config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CUP_ML = 200;
 const ML_IN_LITRE = 1000;
@@ -12,6 +13,9 @@ const WaterTracker = () => {
   const { userEmail } = useContext(AuthContext);
   const [cups, setCups] = useState(0);
   const [goalLitre, setGoalLitre] = useState(DEFAULT_GOAL_LITRE);
+  const [waterIntake, setWaterIntake] = useState(0); // Günlük içilen su miktarı (ml)
+  const [dailyGoal, setDailyGoal] = useState(2000); // Günlük hedef (ml)
+  const [selectedDate, setSelectedDate] = useState(new Date()); // Bugünün tarihi
 
   const goalMl = goalLitre * ML_IN_LITRE;
   const goalCups = Math.round(goalMl / CUP_ML);
@@ -35,10 +39,28 @@ const WaterTracker = () => {
     fetchTodayWater();
   }, [userEmail, goalLitre]);
 
+  // Seçilen tarih değiştiğinde AsyncStorage'dan veriyi yükle
+  useEffect(() => {
+    const loadWaterIntake = async () => {
+      try {
+        const dateKey = selectedDate.toISOString().split('T')[0]; // Tarihi anahtar olarak kullan
+        const savedData = await AsyncStorage.getItem(`waterIntake_${dateKey}`);
+        if (savedData) {
+          setCups(Number(savedData)); // Kaydedilen su miktarını yükle
+        }
+      } catch (e) {
+        console.error('Error loading water intake:', e);
+      }
+    };
+
+    loadWaterIntake();
+  }, [selectedDate]);
+
   // Sadece Save butonuna basınca kaydet
   const saveWater = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0]; // Bugünün tarihi
+      // Backend'e kaydet
       await fetch(`${API_BASE_URL}/api/water-intake`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,9 +70,14 @@ const WaterTracker = () => {
           cups: cups,
         }),
       });
+
+      // AsyncStorage'a kaydet
+      await AsyncStorage.setItem(`waterIntake_${today}`, cups.toString());
+
       Alert.alert('Saved!', 'Your water intake has been saved.');
     } catch (e) {
       Alert.alert('Error', 'Failed to save water intake.');
+      console.error('Error saving water intake:', e);
     }
   };
 
@@ -72,6 +99,15 @@ const WaterTracker = () => {
       const newGoalCups = Math.round((newGoal * ML_IN_LITRE) / CUP_ML);
       if (cups > newGoalCups) setCups(newGoalCups);
     }
+  };
+
+  const addWater = (amount) => {
+    const newIntake = waterIntake + amount;
+    setWaterIntake(newIntake);
+
+    const dateKey = selectedDate.toISOString().split('T')[0];
+    AsyncStorage.setItem(`waterIntake_${dateKey}`, newIntake.toString())
+      .catch(e => console.error('Error saving water intake:', e));
   };
 
   return (
@@ -118,6 +154,7 @@ const WaterTracker = () => {
           <Ionicons name="add-circle" size={28} color="#4fc3f7" />
         </TouchableOpacity>
       </View>
+    
       <Text style={styles.infoText}>
         Drinking water is essential for your health! Don't forget to reach your goal.
       </Text>
@@ -161,6 +198,18 @@ const styles = StyleSheet.create({
   goalNumber: { fontSize: 18, fontWeight: 'bold', color: '#4fc3f7', marginHorizontal: 6 },
   infoText: { fontSize: 13, color: '#555', marginTop: 10, textAlign: 'center' },
   cupInfoText: { fontSize: 12, color: '#888', marginTop: 4 },
+  waterButton: {
+    backgroundColor: '#4fc3f7',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    marginVertical: 8,
+  },
+  waterButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
 
 export default WaterTracker;
