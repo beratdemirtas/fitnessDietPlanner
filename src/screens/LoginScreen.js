@@ -14,11 +14,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../../App';
 import API_BASE_URL from '../config/config';
 
-export default function LoginScreen() {
+const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
   const { signIn } = useContext(AuthContext);
 
   const handleLogin = async () => {
@@ -38,12 +37,62 @@ export default function LoginScreen() {
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
+
+      // Kullanıcı e-postasını kaydet
       await AsyncStorage.setItem('userEmail', email);
-      await signIn(email);
+
+      // Kullanıcıya özel başlangıç verilerini oluştur
+      await initializeUserData(email);
+
+      // Diyet planını kontrol et ve gerekiyorsa oluştur
+      await initializeDietPlan(email);
+
+      // Kullanıcı giriş yaptı olarak işaretleniyor
+      signIn(email);
     } catch (error) {
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Kullanıcıya özel başlangıç verilerini oluştur
+  const initializeUserData = async (email) => {
+    try {
+      await AsyncStorage.setItem(`favoriteMeals_${email}`, JSON.stringify([])); // Favori yemekler
+      await AsyncStorage.setItem(`dailyCalories_${email}`, '2000'); // Günlük kalori hedefi
+      console.log('User data initialized for:', email);
+    } catch (e) {
+      console.error('Error initializing user data:', e);
+    }
+  };
+
+  const initializeDietPlan = async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/user/initialize-diet-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        console.error('Error initializing diet plan:', data.message);
+      } else {
+        console.log('Diet plan initialized:', data.dietPlan);
+      }
+    } catch (error) {
+      console.error('Error initializing diet plan:', error);
+    }
+  };
+
+  const checkLoginStatus = async () => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      setIsLoggedIn(!!email);
+    } catch (error) {
+      console.error('Error checking login status:', error);
+      setIsLoggedIn(false);
     }
   };
 
@@ -101,3 +150,5 @@ const styles = StyleSheet.create({
   linkText: { color: '#32CD32', marginTop: 18, fontWeight: 'bold' },
   linkButton: { marginTop: 20, alignItems: 'center' },
 });
+
+export default LoginScreen;

@@ -65,9 +65,22 @@ export default function MyMealsScreen() {
 
   const loadFavorites = async () => {
     try {
-      const favs = await AsyncStorage.getItem('favoriteMeals');
+      const email = await AsyncStorage.getItem('userEmail');
+      const favs = await AsyncStorage.getItem(`favoriteMeals_${email}`);
       if (favs) setFavorites(JSON.parse(favs));
-    } catch (e) {}
+    } catch (e) {
+      console.error('Error loading favorites:', e);
+    }
+  };
+
+  const saveFavoriteMeals = async (newFavs) => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      await AsyncStorage.setItem(`favoriteMeals_${email}`, JSON.stringify(newFavs));
+      setFavorites(newFavs);
+    } catch (e) {
+      console.error('Error saving favorites:', e);
+    }
   };
 
   const removeFavorite = async (id) => {
@@ -83,7 +96,15 @@ export default function MyMealsScreen() {
     if (!email) return;
     const key = getMyMealsKey(email);
     const data = await AsyncStorage.getItem(key);
-    setMyMeals(data ? JSON.parse(data) : []);
+    const meals = data ? JSON.parse(data) : [];
+    
+    // mealType eksikse varsayılan bir değer ekle
+    const updatedMeals = meals.map(meal => ({
+      ...meal,
+      mealType: meal.mealType || 'custom', // Varsayılan olarak 'custom' eklenir
+    }));
+    
+    setMyMeals(updatedMeals);
   };
 
   const handleConsume = async (meal) => {
@@ -186,6 +207,13 @@ export default function MyMealsScreen() {
           {myMeals.length === 0 && <Text style={styles.infoText}>No saved meals yet.</Text>}
           {myMeals.map(meal => (
             <View key={meal.id} style={styles.mealCard}>
+              {/* Meal Type */}
+              {meal.mealType && (
+                <Text style={styles.mealTypeText}>
+                  {meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}
+                </Text>
+              )}
+              {/* Meal Name */}
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', width: '100%' }}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.mealName, { textAlign: 'left', marginBottom: 0 }]} numberOfLines={2} ellipsizeMode='tail'>
@@ -198,19 +226,9 @@ export default function MyMealsScreen() {
                       <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Consume</Text>
                     </View>
                   </TouchableOpacity>
-                  {meal._id ? (
-                    <TouchableOpacity onPress={() => confirmRemoveMeal(meal._id)}>
-                      <Text style={styles.deleteButton}>🗑️</Text>
-                    </TouchableOpacity>
-                  ) : null}
                 </View>
               </View>
-              {meal.portion && (
-                <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14, marginBottom: 2 }}>Portion: {meal.portion}</Text>
-              )}
-              {!meal.portion && (
-                <Text style={{ fontStyle: 'italic', color: '#bbb', fontSize: 14, marginBottom: 2 }}>Portion: Not specified</Text>
-              )}
+              {/* Foods List */}
               {Array.isArray(meal.foods) && meal.foods.length > 0 ? (
                 <View style={{ marginBottom: 4 }}>
                   {meal.foods.map((f, i) => (
@@ -223,6 +241,7 @@ export default function MyMealsScreen() {
               ) : (
                 <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
               )}
+              {/* Macros */}
               <View style={styles.mealMacrosRow}>
                 <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
                 <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
@@ -323,5 +342,13 @@ const styles = StyleSheet.create({
   deleteBtnText: {
     fontSize: 20,
     color: '#FF3B30',
+  },
+  mealTypeText: {
+    position: 'absolute',
+    top: 8,
+    left: 12, // Sol üst köşe için left kullanıyoruz
+    fontSize: 18, // Daha büyük yazı tipi
+    fontWeight: 'bold',
+    color: '#4CAF50', // Yeşil renk
   },
 });

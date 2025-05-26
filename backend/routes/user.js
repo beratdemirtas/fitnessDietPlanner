@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Meal = require('../models/Meal'); 
+const DietPlan = require('../models/DietPlan');
 
 const router = express.Router();
 
@@ -116,11 +117,19 @@ router.put('/profile', async (req, res) => {
 router.delete('/profile', async (req, res) => {
   try {
     const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
     const result = await User.deleteOne({ email });
-    if (result.deletedCount === 0) return res.status(404).json({ message: 'User not found' });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     res.json({ message: 'Profile deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error deleting profile:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
@@ -145,6 +154,70 @@ router.get('/daily-macros', async (req, res) => {
     res.json(totals);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Diyet planını başlat
+router.post('/initialize-diet-plan', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Kullanıcıyı kontrol et
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Diyet planını kontrol et
+    const existingPlan = await DietPlan.findOne({ userId: user._id });
+    if (existingPlan) {
+      return res.json({ message: 'Diet plan already exists', dietPlan: existingPlan });
+    }
+
+    // Varsayılan diyet planı oluştur
+    const defaultPlan = new DietPlan({
+      userId: user._id,
+      dailyCalories: 2000,
+      meals: [
+        { name: 'Breakfast', calories: 500 },
+        { name: 'Lunch', calories: 700 },
+        { name: 'Dinner', calories: 800 },
+      ],
+    });
+
+    await defaultPlan.save();
+    res.json({ message: 'Diet plan created', dietPlan: defaultPlan });
+  } catch (err) {
+    console.error('Error initializing diet plan:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Diyet planı var mı kontrol et
+router.get('/has-diet-plan', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const dietPlan = await DietPlan.findOne({ userId: user._id });
+    if (dietPlan) {
+      return res.json({ hasDietPlan: true });
+    } else {
+      return res.json({ hasDietPlan: false });
+    }
+  } catch (err) {
+    console.error('Error checking diet plan:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

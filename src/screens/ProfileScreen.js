@@ -101,9 +101,11 @@ export default function ProfileScreen() {
               setLoading(true);
               await User.deleteProfile(userData.email);
               await AsyncStorage.removeItem('userEmail');
+              await AsyncStorage.removeItem(`favoriteMeals_${email}`);
+              await AsyncStorage.removeItem(`dailyCalories_${email}`);
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'Login' }],
+                routes: [{ name: 'Login' }]
               });
             } catch (error) {
               Alert.alert('Error', error.message);
@@ -173,6 +175,41 @@ export default function ProfileScreen() {
       setEditedData(null);
     } catch (error) {
       Alert.alert('Error', 'Failed to logout');
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail'); // Kullanıcı e-postasını al
+      if (!email) {
+        Alert.alert('Error', 'No user found to delete.');
+        return;
+      }
+
+      // Backend'e DELETE isteği gönder
+      const response = await fetch(`${API_BASE_URL}/api/user/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete profile.');
+      }
+
+      // Kullanıcı verilerini AsyncStorage'dan temizle
+      await AsyncStorage.clear();
+
+      // Kullanıcıyı giriş ekranına yönlendir
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }]
+      });
+
+      Alert.alert('Success', 'Your profile has been deleted.');
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      Alert.alert('Error', 'Failed to delete profile.');
     }
   };
 
@@ -250,7 +287,10 @@ export default function ProfileScreen() {
                   }}>
                     <Text style={styles.buttonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleDelete}>
+                  <TouchableOpacity 
+                    style={[styles.button, { backgroundColor: '#FF3B30' }]} 
+                    onPress={handleDeleteProfile}
+                  >
                     <Text style={styles.buttonText}>Delete Profile</Text>
                   </TouchableOpacity>
                 </View>

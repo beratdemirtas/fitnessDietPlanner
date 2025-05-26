@@ -43,11 +43,10 @@ const WaterTracker = () => {
   useEffect(() => {
     const loadWaterIntake = async () => {
       try {
-        const dateKey = selectedDate.toISOString().split('T')[0]; // Tarihi anahtar olarak kullan
-        const savedData = await AsyncStorage.getItem(`waterIntake_${dateKey}`);
-        if (savedData) {
-          setCups(Number(savedData)); // Kaydedilen su miktarını yükle
-        }
+        const email = await AsyncStorage.getItem('userEmail');
+        const today = new Date().toISOString().split('T')[0];
+        const savedCups = await AsyncStorage.getItem(`waterIntake_${email}_${today}`);
+        setCups(Number(savedCups) || 0);
       } catch (e) {
         console.error('Error loading water intake:', e);
       }

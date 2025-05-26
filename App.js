@@ -39,7 +39,7 @@ export default function App() {
     signIn: async (email) => {
       try {
         await AsyncStorage.setItem('userEmail', email);
-        setIsLoggedIn(true);
+        setIsLoggedIn(true); // Kullanıcı giriş yaptı olarak işaretleniyor
       } catch (error) {
         console.error('Error signing in:', error);
       }
@@ -47,7 +47,7 @@ export default function App() {
     signOut: async () => {
       try {
         await AsyncStorage.removeItem('userEmail');
-        setIsLoggedIn(false);
+        setIsLoggedIn(false); // Kullanıcı çıkış yaptı olarak işaretleniyor
       } catch (error) {
         console.error('Error signing out:', error);
       }
@@ -59,21 +59,13 @@ export default function App() {
   return (
     <AuthContext.Provider value={authContext}>
       <NavigationContainer>
-        <Stack.Navigator 
-          screenOptions={{ 
-            headerShown: true,
-            headerStyle: {
-              backgroundColor: '#eaf3ef',
-            },
-            headerTintColor: '#222',
-          }}
-        >
+        <Stack.Navigator>
           {isLoggedIn ? (
             <>
               <Stack.Screen 
                 name="HomeScreen" 
-                component={HomeScreen}
-                options={{ title: 'Home' }}
+                component={HomeScreen} 
+                options={{ title: 'Home' }} 
               />
               <Stack.Screen 
                 name="Profile" 
@@ -125,13 +117,13 @@ export default function App() {
             <>
               <Stack.Screen 
                 name="Login" 
-                component={LoginScreen}
-                options={{ headerShown: false }}
+                component={LoginScreen} 
+                options={{ headerShown: false }} 
               />
               <Stack.Screen 
                 name="Register" 
-                component={RegisterScreen}
-                options={{ headerShown: false }}
+                component={RegisterScreen} 
+                options={{ headerShown: false }} 
               />
             </>
           )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,8 +9,9 @@ import API_BASE_URL from '../config/config'; // ekle
 const API_URL = `${API_BASE_URL}/api/user/profile`;
 
 const HomeScreen = ({ navigation }) => {
+  const [userData, setUserData] = useState({}); // Varsayılan değer: boş nesne
   const [weeklyActivity, setWeeklyActivity] = useState([]);
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState('User'); // Varsayılan değer: 'User'
   const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [weeklyLabels, setWeeklyLabels] = useState(['', '', '', '', '', '', '']);
   const [todayCalories, setTodayCalories] = useState(0);
@@ -18,17 +19,27 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchUserName = async () => {
       const userEmail = await AsyncStorage.getItem('userEmail');
+      console.log('User Email:', userEmail); // Kullanıcı e-postasını kontrol et
       if (userEmail) {
         try {
           const response = await fetch(`${API_URL}?email=${userEmail}`);
           const data = await response.json();
-          if (data && data.name) setUserName(data.name);
-          else setUserName('');
+          console.log('User Data:', data); // API'den gelen veriyi kontrol et
+          if (data && data.name) {
+            setUserName(data.name);
+            setUserData(data);
+          } else {
+            setUserName('');
+            setUserData({});
+          }
         } catch (e) {
+          console.error('Error fetching user name:', e);
           setUserName('');
+          setUserData({});
         }
       } else {
         setUserName('');
+        setUserData({});
       }
     };
     fetchUserName();
@@ -103,7 +114,57 @@ const HomeScreen = ({ navigation }) => {
     }, [])
   );
 
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const email = await AsyncStorage.getItem('userEmail');
+      if (email) {
+        const dailyCalories = await AsyncStorage.getItem(`dailyCalories_${email}`);
+        setTodayCalories(Number(dailyCalories) || 2000); // Varsayılan değer: 2000
+      }
+    };
+    fetchUserData();
+  }, []);
+
   const maxIndex = weeklyData.indexOf(Math.max(...weeklyData));
+
+  if (!userName) return <Text>Loading...</Text>;
+
+  const handleLogin = async (email) => {
+    try {
+      await AsyncStorage.setItem('userEmail', email);
+      console.log('User Email Saved:', email); // Kaydedilen e-postayı kontrol et
+    } catch (e) {
+      console.error('Error saving user email:', e);
+    }
+  };
+
+  const handleDietPlansNavigation = async () => {
+    try {
+      const email = await AsyncStorage.getItem('userEmail');
+      if (!email) {
+        Alert.alert('Error', 'User email not found.');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/user/has-diet-plan?email=${email}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to check diet plan.');
+      }
+
+      if (data.hasDietPlan) {
+        // Kullanıcının diyet planı varsa DietPreferencesScreen'e yönlendir
+        navigation.navigate('DietPreferencesScreen', { email });
+      } else {
+        // Kullanıcının diyet planı yoksa DietScreen'e yönlendir
+        navigation.navigate('DietScreen', { email });
+      }
+    } catch (error) {
+      console.error('Error checking diet plan:', error);
+      Alert.alert('Error', error.message || 'Failed to check diet plan.');
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
@@ -128,13 +189,12 @@ const HomeScreen = ({ navigation }) => {
     
   </TouchableOpacity>
   <TouchableOpacity
-    style={[styles.planCard, { backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1 }]}
-    onPress={() => navigation.navigate('DietScreen')}
-  >
-    <Ionicons name="fast-food-outline" size={28} color="#222" />
-    <Text style={styles.planCardTitle}>Diet Plans</Text>
-    
-  </TouchableOpacity>
+  style={[styles.planCard, { backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1 }]}
+  onPress={() => navigation.navigate('DietScreen')}
+>
+  <Ionicons name="fast-food-outline" size={28} color="#222" />
+  <Text style={styles.planCardTitle}>Diet Plans</Text>
+</TouchableOpacity>
   <TouchableOpacity
     style={[styles.planCard, { backgroundColor: '#e0f7e9' }]}
     onPress={() => navigation.navigate('MealTracker')}
@@ -219,6 +279,19 @@ const styles = StyleSheet.create({
   barItem: { alignItems: 'center', flex: 1 },
   bar: { width: 18, borderRadius: 6, marginBottom: 4 },
   barLabel: { fontSize: 12, color: '#888', marginTop: 2 },
+  dietPlansButton: {
+    backgroundColor: '#F5E1DA',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
+  dietPlansButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
 });
 
 export default HomeScreen;

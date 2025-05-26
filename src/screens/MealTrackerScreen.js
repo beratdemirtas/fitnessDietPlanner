@@ -333,9 +333,6 @@ export default function MealTrackerScreen() {
   const handleAddMeal = async (meal) => {
     try {
       const dateStr = selectedDate.toISOString().split('T')[0];
-      console.log('Adding meal:', { ...meal, userEmail, date: dateStr });
-      
-      // Ensure all required fields are present and properly formatted
       const mealData = {
         userEmail,
         name: meal.name || 'Unnamed Meal',
@@ -344,31 +341,23 @@ export default function MealTrackerScreen() {
         carbs: Number(meal.carbs) || 0,
         calories: Number(meal.calories) || 0,
         date: dateStr,
-        mealType: meal.mealType || 'custom',
-        foods: meal.foods || []
+        mealType: meal.mealType || 'custom', // mealType ekleniyor
+        foods: meal.foods || [] // foods ekleniyor
       };
-      
-      console.log('Sending meal data:', mealData);
-      
+
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mealData)
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add meal');
+        throw new Error('Failed to add meal');
       }
-      
-      const savedMeal = await response.json();
-      console.log('Meal saved successfully:', savedMeal);
-      
+
       await fetchMealsForDay();
-      setError('');
     } catch (e) {
       console.error('Error adding meal:', e);
-      setError(e.message || 'Failed to add meal');
     }
   };
 
@@ -556,6 +545,20 @@ export default function MealTrackerScreen() {
     loadProfile();
   }, []);
 
+  const loadDailyMeals = async () => {
+    const email = await AsyncStorage.getItem('userEmail');
+    const today = new Date().toISOString().split('T')[0];
+    const meals = await AsyncStorage.getItem(`meals_${email}_${today}`);
+    setMealsForDay(meals ? JSON.parse(meals) : []);
+  };
+
+  const saveDailyMeals = async (newMeals) => {
+    const email = await AsyncStorage.getItem('userEmail');
+    const today = new Date().toISOString().split('T')[0];
+    await AsyncStorage.setItem(`meals_${email}_${today}`, JSON.stringify(newMeals));
+    setMealsForDay(newMeals);
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
     <ScrollView style={styles.container}>
@@ -613,6 +616,13 @@ export default function MealTrackerScreen() {
       )}
       {filteredMealsForDay.map(meal => (
         <View key={meal._id || meal.id} style={styles.mealCard}>
+          {/* Meal Type */}
+          {meal.mealType && (
+            <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14, marginBottom: 4 }}>
+              Meal Type: {meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}
+            </Text>
+          )}
+          {/* Meal Name */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Text style={styles.mealName}>{meal.name}</Text>
             {meal._id ? (
@@ -621,6 +631,7 @@ export default function MealTrackerScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
+          {/* Foods List */}
           {Array.isArray(meal.foods) && meal.foods.length > 0 ? (
             <View style={{ marginBottom: 4 }}>
               {meal.foods.map((f, i) => (
@@ -633,6 +644,7 @@ export default function MealTrackerScreen() {
           ) : (
             <Text style={styles.foodName}>Food: {meal.foodName || meal.food || '-'}</Text>
           )}
+          {/* Macros */}
           <View style={styles.mealMacrosRow}>
             <Text style={styles.mealMacro}><Text style={styles.emoji}>💪</Text> {meal.protein}g</Text>
             <Text style={styles.mealMacro}><Text style={styles.emoji}>🥑</Text> {meal.fat}g</Text>
