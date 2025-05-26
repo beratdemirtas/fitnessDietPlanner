@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, ActivityIndicator, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// import mealsData from '../data/meals.json';
-// import { filterMeals } from '../utils/mealFilter';
 
-const API_KEY = '799c65da92msh3564c8eb4e8ed35p15e3a6jsn8a04a0d37a0a'; // <-- Replace with your key or use process.env
+const API_KEY = 'cd719ec3fbmsh620963116af066fp155a28jsnda334c75abfe';
 const API_HOST = 'tasty.p.rapidapi.com';
 const API_URL = 'https://tasty.p.rapidapi.com/recipes/list';
 
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const mealTypes = [
   { key: 'breakfast', label: 'Breakfast', query: 'breakfast' },
   { key: 'lunch', label: 'Lunch', query: 'lunch' },
@@ -18,22 +14,26 @@ const mealTypes = [
 ];
 
 async function fetchTastyRecipes(query) {
-  const res = await fetch(`${API_URL}?from=0&size=20&q=${encodeURIComponent(query)}`, {
-    method: 'GET',
-    headers: {
-      'X-RapidAPI-Key': API_KEY,
-      'X-RapidAPI-Host': API_HOST,
-    },
-  });
-  const data = await res.json();
-  return data.results || [];
+  try {
+    const res = await fetch(`${API_URL}?from=0&size=20&q=${encodeURIComponent(query)}`, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': API_HOST,
+      },
+    });
+    const data = await res.json();
+    return data.results || [];
+  } catch (e) {
+    return [];
+  }
 }
 
 function filterTastyRecipes(recipes, preferences, maxCalories) {
-  // Filter by calories if nutrition info exists, diet, allergies
+  // Filtreyi gevşet: sadece kullanıcı gerçekten seçim yaptıysa uygula
   return recipes.filter(r => {
     if (maxCalories && r.nutrition && r.nutrition.calories && r.nutrition.calories > maxCalories) return false;
-    if (preferences.diet && preferences.diet !== '' && r.tags && !r.tags.some(t => t.name.toLowerCase().includes(preferences.diet))) return false;
+    if (preferences.diet && preferences.diet !== '' && r.tags && !r.tags.some(t => t.name.toLowerCase().includes(preferences.diet.toLowerCase()))) return false;
     if (preferences.allergies && preferences.allergies.length > 0 && r.sections) {
       const allIngredients = r.sections.flatMap(s => s.components.map(c => c.ingredient.name.toLowerCase()));
       if (preferences.allergies.some(a => allIngredients.includes(a.toLowerCase()))) return false;
@@ -43,7 +43,7 @@ function filterTastyRecipes(recipes, preferences, maxCalories) {
 }
 
 function getMealNutrition(recipe) {
-  if (!recipe.nutrition) return null;
+  if (!recipe || !recipe.nutrition) return null;
   return {
     calories: recipe.nutrition.calories,
     protein: recipe.nutrition.protein,
@@ -52,245 +52,235 @@ function getMealNutrition(recipe) {
   };
 }
 
-const DietPreferencesScreen = ({ route, navigation }) => {
-  const preferences = route.params?.preferences || {};
-  const [weeklyPlan, setWeeklyPlan] = useState([]);
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [completedDays, setCompletedDays] = useState([]);
+const DietPreferencesScreen = ({ navigation }) => {
+  const [preferences, setPreferences] = useState({
+    calories: 2000,
+    diet: '',
+    allergies: [],
+    gender: 'male',
+    age: '',
+    height: '',
+    weight: '',
+    activity: 1.2,
+    goal: 'maintain',
+  });
+
+  const [todayMenu, setTodayMenu] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    navigation.setOptions({ title: 'Weekly Meal Plan' });
-  }, [navigation]);
-
-  // Load completed days from AsyncStorage
-  useEffect(() => {
-    AsyncStorage.getItem('completedDays').then(data => {
-      if (data) setCompletedDays(JSON.parse(data));
-    });
+    const loadPreferences = async () => {
+      try {
+        const savedPreferences = await AsyncStorage.getItem('dietPreferences');
+        if (savedPreferences) {
+          const parsedPreferences = JSON.parse(savedPreferences);
+          setPreferences(parsedPreferences);
+          fetchTodayMenu(parsedPreferences);
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      }
+    };
+    loadPreferences();
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-    async function buildPlan() {
-      setLoading(true);
-      const plan = [];
-      for (let i = 0; i < 7; i++) {
-        const day = {};
-        for (const mealType of mealTypes) {
-          // Build query: meal type + diet + allergies
-          let query = mealType.query;
-          if (preferences.diet && preferences.diet !== '') query += ` ${preferences.diet}`;
-          // Optionally add more filters
-          const recipes = await fetchTastyRecipes(query);
-          const filtered = filterTastyRecipes(recipes, preferences, preferences.calories ? preferences.calories / 4 : undefined);
-          day[mealType.key] = filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : null;
+  const fetchTodayMenu = async (preferences) => {
+    setLoading(true);
+    try {
+      const menu = [];
+      for (const mealType of mealTypes) {
+        // 1. Daha genel/popüler arama kelimesi kullan
+        let query = mealType.query;
+        if (preferences.diet && preferences.diet !== '') query += ` ${preferences.diet}`;
+        // 2. Sonuç yoksa, sadece mealType ile tekrar dene
+        let recipes = await fetchTastyRecipes(query);
+        let filtered = filterTastyRecipes(recipes, preferences, preferences.calories ? preferences.calories / 4 : undefined);
+        if (filtered.length === 0) {
+          // Filtreyi gevşet: sadece mealType ile tekrar dene
+          recipes = await fetchTastyRecipes(mealType.query);
+          filtered = recipes;
         }
-        plan.push(day);
+        menu.push({
+          mealType: mealType.key,
+          recipe: filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : null,
+        });
       }
-      if (isMounted) setWeeklyPlan(plan);
+      setTodayMenu(menu);
+    } catch (error) {
+      console.error('Error fetching today\'s menu:', error);
+      Alert.alert('Error', 'Failed to fetch today\'s menu. Please try again later.');
+    } finally {
       setLoading(false);
-    }
-    buildPlan();
-    return () => { isMounted = false; };
-  }, [preferences]);
-
-  const openDayModal = (dayIdx) => {
-    setSelectedDay(dayIdx);
-    setModalVisible(true);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedDay(null);
-  };
-
-  const markDayComplete = async (dayIdx) => {
-    if (!completedDays.includes(dayIdx)) {
-      const updated = [...completedDays, dayIdx];
-      setCompletedDays(updated);
-      await AsyncStorage.setItem('completedDays', JSON.stringify(updated));
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.header}>Your Diet Preferences</Text>
-          <Text style={styles.prefLabel}>Daily Calorie Goal: <Text style={styles.prefValue}>{preferences.calories || '-'}</Text></Text>
-          <Text style={styles.prefLabel}>Diet Type: <Text style={styles.prefValue}>{preferences.diet || 'None'}</Text></Text>
-          <Text style={styles.prefLabel}>Allergies: <Text style={styles.prefValue}>{preferences.allergies && preferences.allergies.length > 0 ? preferences.allergies.join(', ') : 'None'}</Text></Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Kullanıcı Tercihleri Kartı */}
+      <View style={styles.card}>
+        <Text style={styles.header}>Your Diet Preferences</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>Calories:</Text>
+          <Text style={styles.value}>{preferences.calories} kcal</Text>
         </View>
-        <View style={styles.card}>
-          <Text style={styles.header}>Weekly Meal Plan</Text>
-          {loading ? (
-            <ActivityIndicator size="large" color="#6495ED" style={{ marginVertical: 32 }} />
-          ) : (
-            <View style={styles.weekGrid}>
-              {weeklyPlan.map((day, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[styles.dayCard, completedDays.includes(idx) && { backgroundColor: '#b6e2c6', borderColor: '#4CAF50' }]}
-                  activeOpacity={0.8}
-                  onPress={() => openDayModal(idx)}
-                >
-                  <Text style={styles.dayCardText}>
-                    {daysOfWeek[idx]} {completedDays.includes(idx) ? '✔️' : ''}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+        <View style={styles.row}>
+          <Text style={styles.label}>Diet Type:</Text>
+          <Text style={styles.value}>{preferences.diet || 'None'}</Text>
         </View>
-        <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={closeModal}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalHeader}>{selectedDay !== null ? daysOfWeek[selectedDay] : ''} - Meals</Text>
-              <ScrollView style={{ maxHeight: 400 }}>
-                {selectedDay !== null && mealTypes.map(mealType => {
-                  const meal = weeklyPlan[selectedDay][mealType.key];
-                  if (!meal) return (
-                    <View key={mealType.key} style={styles.mealDetailCard}>
-                      <Text style={styles.mealType}>{mealType.label}</Text>
-                      <Text style={styles.noMeal}>No suitable meal found.</Text>
-                    </View>
-                  );
-                  const nutrition = getMealNutrition(meal);
-                  return (
-                    <View key={mealType.key} style={styles.mealDetailCard}>
-                      <Text style={styles.mealType}>{mealType.label}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                        <Image source={{ uri: meal.thumbnail_url }} style={styles.mealImage} />
-                        <View style={{ flex: 1, marginLeft: 10 }}>
-                          <Text style={styles.mealName}>{meal.name}</Text>
-                          {nutrition && <Text style={styles.mealInfo}>Calories: {nutrition.calories}</Text>}
-                          {nutrition && <Text style={styles.mealInfo}>Protein: {nutrition.protein}g, Fat: {nutrition.fat}g, Carbs: {nutrition.carbs}g</Text>}
-                        </View>
-                      </View>
-                      <Text style={styles.mealSubHeader}>Ingredients:</Text>
-                      <Text style={styles.mealText}>{meal.sections ? meal.sections.flatMap(s => s.components.map(c => c.ingredient.name)).join(', ') : '-'}</Text>
-                      <Text style={styles.mealSubHeader}>Instructions:</Text>
-                      <Text style={styles.mealText}>{meal.instructions ? meal.instructions.map(i => i.display_text).join(' ') : '-'}</Text>
-                    </View>
-                  );
-                })}
-              </ScrollView>
-              <TouchableOpacity style={styles.closeBtn} onPress={closeModal}>
-                <Text style={styles.closeBtnText}>Close</Text>
-              </TouchableOpacity>
-              {selectedDay !== null && !completedDays.includes(selectedDay) && (
-                <TouchableOpacity style={[styles.closeBtn, { backgroundColor: '#4CAF50', marginTop: 8 }]} onPress={() => { markDayComplete(selectedDay); closeModal(); }}>
-                  <Text style={[styles.closeBtnText, { color: '#fff' }]}>Complete</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </Modal>
-      </ScrollView>
-    </SafeAreaView>
+        <View style={styles.row}>
+          <Text style={styles.label}>Allergies:</Text>
+          <Text style={styles.value}>
+            {preferences.allergies.length > 0 ? preferences.allergies.join(', ') : 'None'}
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Gender:</Text>
+          <Text style={styles.value}>{preferences.gender}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Age:</Text>
+          <Text style={styles.value}>{preferences.age || '-'}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Height:</Text>
+          <Text style={styles.value}>{preferences.height || '-'} cm</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Weight:</Text>
+          <Text style={styles.value}>{preferences.weight || '-'} kg</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Activity Level:</Text>
+          <Text style={styles.value}>{preferences.activity}</Text>
+        </View>
+        {/* Yeşil Edit Preferences Butonu */}
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => navigation.navigate('DietScreen', { openModal: true })}
+        >
+          <Text style={styles.editButtonText}>Edit Preferences</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Günün Menüsü */}
+      <View style={styles.card}>
+        <Text style={styles.header}>Today's Menu</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#4CAF50" />
+        ) : (
+          todayMenu.map((meal, index) => {
+            const recipe = meal.recipe;
+            const nutrition = getMealNutrition(recipe);
+            const ingredients = recipe?.sections
+              ? recipe.sections.flatMap(s => s.components.map(c => c.ingredient.name)).join(', ')
+              : '-';
+            const instructions = recipe?.instructions
+              ? recipe.instructions.map(i => i.display_text).join(' ')
+              : '-';
+            return (
+              <View key={index} style={styles.menuDetailCard}>
+                <Text style={styles.mealType}>{meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}</Text>
+                {recipe?.thumbnail_url ? (
+                  <Image source={{ uri: recipe.thumbnail_url }} style={styles.mealImage} />
+                ) : null}
+                <Text style={styles.mealName}>{recipe ? recipe.name : 'No recipe found'}</Text>
+                {nutrition && (
+                  <>
+                    <Text style={styles.nutritionText}>
+                      Calories: {nutrition.calories ?? '-'}
+                    </Text>
+                    <Text style={styles.nutritionText}>
+                      Protein: {nutrition.protein ?? '-'}g, Fat: {nutrition.fat ?? '-'}g, Carbs: {nutrition.carbs ?? '-'}g
+                    </Text>
+                  </>
+                )}
+                <Text style={styles.sectionTitle}>Ingredients:</Text>
+                <Text style={styles.mealText}>{ingredients}</Text>
+                <Text style={styles.sectionTitle}>Instructions:</Text>
+                <Text style={styles.mealText}>{instructions}</Text>
+              </View>
+            );
+          })
+        )}
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
     padding: 16,
-    backgroundColor: '#eaf3ef',
-    paddingBottom: 32,
+    backgroundColor: '#f7f9fc',
+    alignItems: 'center',
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 22,
-    elevation: 3,
+    borderRadius: 12,
+    padding: 16,
+    width: '100%',
+    marginBottom: 18,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   header: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#2d4d6a',
-    marginBottom: 14,
+    marginBottom: 10,
     textAlign: 'center',
   },
-  prefLabel: {
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 7,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#444',
+  },
+  value: {
+    fontSize: 16,
+    color: '#666',
+  },
+  dietCard: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
+  day: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginBottom: 2,
+  },
+  meal: {
     fontSize: 15,
     color: '#444',
-    marginBottom: 4,
   },
-  prefValue: {
-    fontWeight: 'bold',
-    color: '#222',
-  },
-  weekGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 4,
-    gap: 6,
-  },
-  dayCard: {
-    backgroundColor: '#eaf3ef',
-    borderRadius: 14,
+  editButton: {
+    backgroundColor: '#4CAF50',
     paddingVertical: 16,
-    paddingHorizontal: 0,
-    margin: 4,
-    minWidth: 72,
-    maxWidth: 90,
-    width: '27%',
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    borderWidth: 1,
-    borderColor: 'transparent',
+    marginTop: 16,
+    marginBottom: 0,
   },
-  dayCardText: {
-    color: '#2d4d6a',
+  editButtonText: {
+    color: '#fff',
     fontWeight: 'bold',
-    fontSize: 14,
-    letterSpacing: 0.1,
-    textAlign: 'center',
-    flexWrap: 'nowrap',
+    fontSize: 18,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 22,
-    width: '92%',
-    maxWidth: 420,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    alignItems: 'stretch',
-  },
-  modalHeader: {
-    fontSize: 19,
-    fontWeight: 'bold',
-    color: '#2d4d6a',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  mealDetailCard: {
+  menuDetailCard: {
     backgroundColor: '#f5f5f5',
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
     marginBottom: 14,
+    elevation: 1,
   },
   mealType: {
     fontSize: 16,
@@ -303,13 +293,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#222',
     marginBottom: 2,
+    marginTop: 4,
   },
-  mealInfo: {
+  mealImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    backgroundColor: '#eee',
+    marginBottom: 6,
+    alignSelf: 'flex-start',
+  },
+  nutritionText: {
     fontSize: 13,
     color: '#555',
     marginBottom: 1,
   },
-  mealSubHeader: {
+  sectionTitle: {
     fontSize: 13,
     fontWeight: 'bold',
     color: '#444',
@@ -321,29 +320,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 2,
   },
-  mealImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    backgroundColor: '#eee',
-  },
-  noMeal: {
-    color: '#888',
-    fontStyle: 'italic',
-    marginBottom: 6,
-  },
-  closeBtn: {
-    backgroundColor: '#6495ED',
-    borderRadius: 10,
-    paddingVertical: 12,
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  closeBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
 });
 
-export default DietPreferencesScreen; 
+export default DietPreferencesScreen;
+

@@ -190,7 +190,7 @@ const HomeScreen = ({ navigation }) => {
   </TouchableOpacity>
   <TouchableOpacity
   style={[styles.planCard, { backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1 }]}
-  onPress={() => navigation.navigate('DietScreen')}
+  onPress={() => navigation.navigate('DietScreen')} // DietScreen'e yönlendirme
 >
   <Ionicons name="fast-food-outline" size={28} color="#222" />
   <Text style={styles.planCardTitle}>Diet Plans</Text>

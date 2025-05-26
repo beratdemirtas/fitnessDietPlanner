@@ -103,7 +103,7 @@ export default function App() {
                 options={{ title: 'Set Daily Goal' }}
               />
               <Stack.Screen 
-                name="DietPreferences" 
+                name="DietPreferencesScreen" 
                 component={DietPreferencesScreen}
                 options={{ title: 'Diet Preferences' }}
               />
