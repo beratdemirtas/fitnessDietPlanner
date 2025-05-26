@@ -89,14 +89,11 @@ const DietPreferencesScreen = ({ navigation }) => {
     try {
       const menu = [];
       for (const mealType of mealTypes) {
-        // 1. Daha genel/popüler arama kelimesi kullan
         let query = mealType.query;
         if (preferences.diet && preferences.diet !== '') query += ` ${preferences.diet}`;
-        // 2. Sonuç yoksa, sadece mealType ile tekrar dene
         let recipes = await fetchTastyRecipes(query);
         let filtered = filterTastyRecipes(recipes, preferences, preferences.calories ? preferences.calories / 4 : undefined);
         if (filtered.length === 0) {
-          // Filtreyi gevşet: sadece mealType ile tekrar dene
           recipes = await fetchTastyRecipes(mealType.query);
           filtered = recipes;
         }
@@ -133,27 +130,6 @@ const DietPreferencesScreen = ({ navigation }) => {
             {preferences.allergies.length > 0 ? preferences.allergies.join(', ') : 'None'}
           </Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Gender:</Text>
-          <Text style={styles.value}>{preferences.gender}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Age:</Text>
-          <Text style={styles.value}>{preferences.age || '-'}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Height:</Text>
-          <Text style={styles.value}>{preferences.height || '-'} cm</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Weight:</Text>
-          <Text style={styles.value}>{preferences.weight || '-'} kg</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Activity Level:</Text>
-          <Text style={styles.value}>{preferences.activity}</Text>
-        </View>
-        {/* Yeşil Edit Preferences Butonu */}
         <TouchableOpacity
           style={styles.editButton}
           onPress={() => navigation.navigate('DietScreen', { openModal: true })}
@@ -171,33 +147,26 @@ const DietPreferencesScreen = ({ navigation }) => {
           todayMenu.map((meal, index) => {
             const recipe = meal.recipe;
             const nutrition = getMealNutrition(recipe);
-            const ingredients = recipe?.sections
-              ? recipe.sections.flatMap(s => s.components.map(c => c.ingredient.name)).join(', ')
-              : '-';
-            const instructions = recipe?.instructions
-              ? recipe.instructions.map(i => i.display_text).join(' ')
-              : '-';
             return (
-              <View key={index} style={styles.menuDetailCard}>
-                <Text style={styles.mealType}>{meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}</Text>
-                {recipe?.thumbnail_url ? (
-                  <Image source={{ uri: recipe.thumbnail_url }} style={styles.mealImage} />
-                ) : null}
-                <Text style={styles.mealName}>{recipe ? recipe.name : 'No recipe found'}</Text>
-                {nutrition && (
+              <View key={index} style={styles.mealCard}>
+                <Text style={styles.mealType}>
+                  {meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}
+                </Text>
+                {recipe ? (
                   <>
-                    <Text style={styles.nutritionText}>
-                      Calories: {nutrition.calories ?? '-'}
-                    </Text>
-                    <Text style={styles.nutritionText}>
-                      Protein: {nutrition.protein ?? '-'}g, Fat: {nutrition.fat ?? '-'}g, Carbs: {nutrition.carbs ?? '-'}g
-                    </Text>
+                    <Text style={styles.mealName}>{recipe.name}</Text>
+                    {recipe.thumbnail_url && (
+                      <Image source={{ uri: recipe.thumbnail_url }} style={styles.mealImage} />
+                    )}
+                    {nutrition && (
+                      <Text style={styles.nutritionText}>
+                        Calories: {nutrition.calories} kcal | Protein: {nutrition.protein}g | Fat: {nutrition.fat}g | Carbs: {nutrition.carbs}g
+                      </Text>
+                    )}
                   </>
+                ) : (
+                  <Text style={styles.noRecipeText}>No recipe found</Text>
                 )}
-                <Text style={styles.sectionTitle}>Ingredients:</Text>
-                <Text style={styles.mealText}>{ingredients}</Text>
-                <Text style={styles.sectionTitle}>Instructions:</Text>
-                <Text style={styles.mealText}>{instructions}</Text>
               </View>
             );
           })
@@ -212,14 +181,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 16,
     backgroundColor: '#f7f9fc',
-    alignItems: 'center',
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    width: '100%',
-    marginBottom: 18,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -235,7 +202,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 7,
+    marginBottom: 8,
   },
   label: {
     fontSize: 16,
@@ -246,79 +213,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
-  dietCard: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 8,
-  },
-  day: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginBottom: 2,
-  },
-  meal: {
-    fontSize: 15,
-    color: '#444',
-  },
   editButton: {
     backgroundColor: '#4CAF50',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 0,
+    marginTop: 12,
   },
   editButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
   },
-  menuDetailCard: {
+  mealCard: {
     backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 14,
-    elevation: 1,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
   },
   mealType: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#6495ED',
-    marginBottom: 4,
+    color: '#4CAF50',
+    marginBottom: 6,
   },
   mealName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#222',
-    marginBottom: 2,
-    marginTop: 4,
+    marginBottom: 4,
   },
   mealImage: {
-    width: 70,
-    height: 70,
+    width: '100%',
+    height: 150,
     borderRadius: 8,
-    backgroundColor: '#eee',
-    marginBottom: 6,
-    alignSelf: 'flex-start',
+    marginBottom: 8,
   },
   nutritionText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#555',
-    marginBottom: 1,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#444',
-    marginTop: 6,
-    marginBottom: 2,
-  },
-  mealText: {
-    fontSize: 13,
-    color: '#333',
-    marginBottom: 2,
+  noRecipeText: {
+    fontSize: 14,
+    color: '#888',
+    fontStyle: 'italic',
   },
 });
 

@@ -116,20 +116,20 @@ router.put('/profile', async (req, res) => {
 // Delete Profile
 router.delete('/profile', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email } = req.body; // Ensure email is coming from the request body
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
 
-    const result = await User.deleteOne({ email });
+    const result = await User.deleteOne({ email }); // Delete the user by email
     if (result.deletedCount === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ message: 'Profile deleted' });
+    res.json({ message: 'Profile deleted successfully' }); // Success response
   } catch (err) {
     console.error('Error deleting profile:', err);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error' }); // Error response
   }
 });
 

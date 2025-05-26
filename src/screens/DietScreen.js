@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_BASE_URL from '../config/config';
@@ -82,6 +82,14 @@ const DietScreen = ({ navigation, route }) => {
     const handleOpenModal = async () => {
       setModalVisible(true);
     };
+    const handleViewPreferences = async () => {
+      const savedPreferences = await AsyncStorage.getItem('dietPreferences');
+      if (!savedPreferences) {
+        Alert.alert('No Diet Found', 'You have not created a diet plan yet. Please create one first.');
+        return;
+      }
+      navigation.navigate('DietPreferencesScreen');
+    };
 
     useEffect(() => {
       const fetchUserData = async () => {
@@ -146,8 +154,8 @@ const DietScreen = ({ navigation, route }) => {
             </TouchableOpacity>
             {/* Yeni Buton */}
             <TouchableOpacity
-              style={[styles.button, styles.preferencesButton]} 
-              onPress={() => navigation.navigate('DietPreferencesScreen')} // Doğru ekran adı
+              style={[styles.button, styles.preferencesButton]}
+              onPress={handleViewPreferences} // Updated to use the new function
             >
               <Text style={styles.buttonText}>View My Diet Preferences</Text>
             </TouchableOpacity>

@@ -180,36 +180,38 @@ export default function ProfileScreen() {
 
   const handleDeleteProfile = async () => {
     try {
-      const email = await AsyncStorage.getItem('userEmail'); // Kullanıcı e-postasını al
+      const email = await AsyncStorage.getItem('userEmail'); // Retrieve the user's email
       if (!email) {
         Alert.alert('Error', 'No user found to delete.');
         return;
       }
 
-      // Backend'e DELETE isteği gönder
-      const response = await fetch(`${API_BASE_URL}/api/user/delete`, {
+      // Send DELETE request to the backend
+      const response = await fetch(`${DELETE_URL}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email }) // Pass email in the request body
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to delete profile.');
+        throw new Error(data.message || 'Failed to delete profile.');
       }
 
-      // Kullanıcı verilerini AsyncStorage'dan temizle
+      // Clear user data from AsyncStorage
       await AsyncStorage.clear();
 
-      // Kullanıcıyı giriş ekranına yönlendir
+      // Navigate to the login screen and reset the navigation stack
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Login' }]
+        routes: [{ name: 'LoginScreen' }] // Corrected screen name
       });
 
       Alert.alert('Success', 'Your profile has been deleted.');
     } catch (error) {
       console.error('Error deleting profile:', error);
-      Alert.alert('Error', 'Failed to delete profile.');
+      Alert.alert('Error', error.message || 'Failed to delete profile.');
     }
   };
 
@@ -289,7 +291,7 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={[styles.button, { backgroundColor: '#FF3B30' }]} 
-                    onPress={handleDeleteProfile}
+                    onPress={handleDeleteProfile} // Updated to use the function
                   >
                     <Text style={styles.buttonText}>Delete Profile</Text>
                   </TouchableOpacity>
