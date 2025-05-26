@@ -24,10 +24,10 @@ const WaterTracker = () => {
 
   // Sayfa açılınca backend'den veri çek
   useEffect(() => {
-    const fetchTodayWater = async () => {
+    const fetchWater = async () => {
       try {
-        const today = new Date().toISOString().split('T')[0];
-        const response = await fetch(`${API_BASE_URL}/api/water-intake?email=${userEmail}&date=${today}`);
+        const dateKey = selectedDate.toISOString().split('T')[0];
+        const response = await fetch(`${API_BASE_URL}/api/water-intake?email=${userEmail}&date=${dateKey}`);
         if (response.ok) {
           const data = await response.json();
           if (data && typeof data.cups === 'number') {
@@ -36,42 +36,41 @@ const WaterTracker = () => {
         }
       } catch (e) {}
     };
-    fetchTodayWater();
-  }, [userEmail, goalLitre]);
+    fetchWater();
+  }, [userEmail, goalLitre, selectedDate]);
 
   // Seçilen tarih değiştiğinde AsyncStorage'dan veriyi yükle
   useEffect(() => {
     const loadWaterIntake = async () => {
       try {
-        const email = await AsyncStorage.getItem('userEmail');
-        const today = new Date().toISOString().split('T')[0];
-        const savedCups = await AsyncStorage.getItem(`waterIntake_${email}_${today}`);
+        const dateKey = selectedDate.toISOString().split('T')[0];
+        const savedCups = await AsyncStorage.getItem(`waterIntake_${userEmail}_${dateKey}`);
         setCups(Number(savedCups) || 0);
       } catch (e) {
         console.error('Error loading water intake:', e);
       }
     };
-
     loadWaterIntake();
-  }, [selectedDate]);
+  }, [selectedDate, userEmail]);
 
   // Sadece Save butonuna basınca kaydet
   const saveWater = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]; // Bugünün tarihi
+      const today = new Date().toISOString().split('T')[0];
       // Backend'e kaydet
+      const dateKey = selectedDate.toISOString().split('T')[0];
       await fetch(`${API_BASE_URL}/api/water-intake`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: userEmail,
-          date: today,
+          date: dateKey,
           cups: cups,
         }),
       });
 
-      // AsyncStorage'a kaydet
-      await AsyncStorage.setItem(`waterIntake_${today}`, cups.toString());
+      // AsyncStorage'a kaydet (email ile birlikte)
+      await AsyncStorage.setItem(`waterIntake_${userEmail}_${dateKey}`, cups.toString());
 
       Alert.alert('Saved!', 'Your water intake has been saved.');
     } catch (e) {

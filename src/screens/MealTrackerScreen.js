@@ -676,81 +676,88 @@ export default function MealTrackerScreen() {
       </TouchableOpacity>
     </View>
     <Modal visible={showCreateMealModal} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Meal</Text>
-              <Text style={styles.inputLabel}>Select meal type</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12, justifyContent: 'center' }}>
-                {mealTypes.map(mt => (
-                  <TouchableOpacity
-                    key={mt.value}
-                    onPress={() => setSelectedMealType(mt.value)}
-                    style={{
-                      backgroundColor: selectedMealType === mt.value ? '#4CAF50' : '#f5f5f5',
-                      paddingVertical: 7,
-                      paddingHorizontal: 16,
-                      borderRadius: 20,
-                      marginHorizontal: 4,
-                      marginBottom: 6,
-                      borderWidth: selectedMealType === mt.value ? 0 : 1,
-                      borderColor: '#ddd',
-                    }}
-                  >
-                    <Text style={{ color: selectedMealType === mt.value ? '#fff' : '#222', fontWeight: 'bold', fontSize: 15 }}>{mt.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.inputLabel}>Select Date</Text>
-              <TouchableOpacity 
-                style={styles.dateSelector} 
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Ionicons name="calendar-outline" size={22} color="#2d4d6a" style={{marginRight: 6}} />
-                <Text style={styles.dateSelectorText}>
-                  {selectedDate.toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </Text>
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={selectedDate}
-                  mode="date"
-                  display="default"
-                  onChange={(event, selected) => {
-                    setShowDatePicker(false);
-                    if (selected) {
-                      setSelectedDate(selected);
-                    }
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { maxHeight: '85%', width: '90%', justifyContent: 'center', alignItems: 'center' }]}>
+          <ScrollView
+            contentContainerStyle={{
+              //flexGrow: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingBottom: 24,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.modalTitle}>Create Meal</Text>
+            <Text style={styles.modalSubtitle}>Add foods and details for your meal</Text>
+            <Text style={styles.inputLabel}>Select meal type</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12, justifyContent: 'center' }}>
+              {mealTypes.map(mt => (
+                <TouchableOpacity
+                  key={mt.value}
+                  onPress={() => setSelectedMealType(mt.value)}
+                  style={{
+                    backgroundColor: selectedMealType === mt.value ? '#4CAF50' : '#f5f5f5',
+                    paddingVertical: 7,
+                    paddingHorizontal: 16,
+                    borderRadius: 20,
+                    marginHorizontal: 4,
+                    marginBottom: 6,
+                    borderWidth: selectedMealType === mt.value ? 0 : 1,
+                    borderColor: '#ddd',
                   }}
-                  maximumDate={new Date()}
-                />
+                >
+                  <Text style={{ color: selectedMealType === mt.value ? '#fff' : '#222', fontWeight: 'bold', fontSize: 15 }}>{mt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.inputLabel}>Select Date</Text>
+            <TouchableOpacity 
+              style={styles.dateSelector} 
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Ionicons name="calendar-outline" size={22} color="#2d4d6a" style={{marginRight: 6}} />
+              <Text style={styles.dateSelectorText}>
+                {selectedDate.toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="default"
+                onChange={(event, selected) => {
+                  setShowDatePicker(false);
+                  if (selected) {
+                    setSelectedDate(selected);
+                  }
+                }}
+                maximumDate={new Date()}
+              />
+            )}
+            <Text style={styles.inputLabel}>Add Food</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 8 }}>
+              <TextInput
+                style={[styles.input, { flex: 1, marginBottom: 0 }]}
+                placeholder="Search for food or drink..."
+                value={mealSearch}
+                onChangeText={handleMealSearch}
+              />
+              {mealSearch.length > 0 && (
+                <TouchableOpacity onPress={() => { setMealSearch(''); setMealSearchResults([]); }} style={{ marginLeft: 6 }}>
+                  <Ionicons name="close-circle" size={22} color="#bbb" />
+                </TouchableOpacity>
               )}
-              <Text style={styles.inputLabel}>Add Food</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 8 }}>
-                <TextInput
-                  style={[styles.input, { flex: 1, marginBottom: 0 }]}
-                  placeholder="Search for food or drink..."
-                  value={mealSearch}
-                  onChangeText={handleMealSearch}
-                />
-                {mealSearch.length > 0 && (
-                  <TouchableOpacity onPress={() => { setMealSearch(''); setMealSearchResults([]); }} style={{ marginLeft: 6 }}>
-                    <Ionicons name="close-circle" size={22} color="#bbb" />
-                  </TouchableOpacity>
-                )}
-              </View>
-              {creatingMealLoading && <Text style={styles.infoText}>Searching...</Text>}
-              {mealSearchResults.length > 0 && (
-                <View style={{width:'100%', marginBottom: 8}}>
+            </View>
+            {creatingMealLoading && <Text style={styles.infoText}>Searching...</Text>}
+            {mealSearchResults.length > 0 && (
+              <View style={{width:'100%', marginBottom: 8, maxHeight: 220}}>
+                <ScrollView>
                   {mealSearchResults.map(food => {
                     const isFav = favorites.some(f => f.id === food.fdcId);
                     return (
@@ -771,30 +778,33 @@ export default function MealTrackerScreen() {
                       </View>
                     );
                   })}
-                </View>
-              )}
-              {mealItems.length > 0 && (
-                <View style={{width:'100%', marginTop:10}}>
-                  <Text style={styles.inputLabel}>Foods/Drinks in this meal:</Text>
-                  {mealItems.map((item, idx) => (
-                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, backgroundColor:'#eaf3ef', borderRadius:8, padding:8 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.mealName}>{item.food.description}</Text>
-                        {item.portion && <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14 }}>Portion: {item.portion}</Text>}
-                        <Text style={styles.mealMacroSmall}>💪 {item.macros.protein}g  🥑 {item.macros.fat}g  🍞 {item.macros.carbs}g  🔥 {item.macros.calories} kcal</Text>
-                      </View>
-                      <TouchableOpacity onPress={() => handleRemoveMealItem(idx)} style={{ marginLeft: 8 }}>
-                        <Ionicons name="trash" size={22} color="#E57373" />
-                      </TouchableOpacity>
+                </ScrollView>
+              </View>
+            )}
+            {mealItems.length > 0 && (
+              <View style={{width:'100%', marginTop:10}}>
+                <Text style={styles.inputLabel}>Foods/Drinks in this meal:</Text>
+                {mealItems.map((item, idx) => (
+                  <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6, backgroundColor:'#eaf3ef', borderRadius:8, padding:8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.mealName}>{item.food.description}</Text>
+                      {item.portion && <Text style={{ fontStyle: 'italic', color: '#666', fontSize: 14 }}>Portion: {item.portion}</Text>}
+                      <Text style={styles.mealMacroSmall}>💪 {item.macros.protein}g  🥑 {item.macros.fat}g  🍞 {item.macros.carbs}g  🔥 {item.macros.calories} kcal</Text>
                     </View>
-                  ))}
-                  <View style={{ backgroundColor:'#f5f5f5', borderRadius:8, padding:8, marginTop:8 }}>
-                    <Text style={{ fontWeight:'bold', color:'#222' }}>Total for this meal:</Text>
-                    <Text style={styles.mealMacroSmall}>💪 {totalMealMacros.protein}g  🥑 {totalMealMacros.fat}g  🍞 {totalMealMacros.carbs}g  🔥 {totalMealMacros.calories} kcal</Text>
+                    <TouchableOpacity onPress={() => handleRemoveMealItem(idx)} style={{ marginLeft: 8 }}>
+                      <Ionicons name="trash" size={22} color="#E57373" />
+                    </TouchableOpacity>
                   </View>
+                ))}
+                <View style={{ backgroundColor:'#f5f5f5', borderRadius:8, padding:8, marginTop:8 }}>
+                  <Text style={{ fontWeight:'bold', color:'#222' }}>Total for this meal:</Text>
+                  <Text style={styles.mealMacroSmall}>💪 {totalMealMacros.protein}g  🥑 {totalMealMacros.fat}g  🍞 {totalMealMacros.carbs}g  🔥 {totalMealMacros.calories} kcal</Text>
                 </View>
-              )}
-              <TouchableOpacity style={styles.button} onPress={async () => {
+              </View>
+            )}
+            <TouchableOpacity
+              style={styles.saveBtnModern}
+              onPress={async () => {
                 if (mealItems.length === 0) { setError('Please add at least one food or drink.'); return; }
                 setCreatingMealLoading(true);
                 try {
@@ -853,17 +863,20 @@ export default function MealTrackerScreen() {
                   setError('Failed to save meal.');
                 }
                 setCreatingMealLoading(false);
-              }}>
-                <Text style={styles.buttonText}>Save</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, {backgroundColor:'#888'}]} onPress={() => { setShowCreateMealModal(false); setMealItems([]); }}>
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+              }}
+            >
+              <Text style={styles.saveBtnTextModern}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelBtnModern}
+              onPress={() => { setShowCreateMealModal(false); setMealItems([]); }}
+            >
+              <Text style={styles.cancelBtnTextModern}>Cancel</Text>
+            </TouchableOpacity>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          </ScrollView>
+        </View>
+      </View>
     </Modal>
     <Modal
       visible={showGoalModal}
@@ -872,7 +885,7 @@ export default function MealTrackerScreen() {
       onRequestClose={() => setShowGoalModal(false)}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContentModern}>
+        <View style={styles.modalContent}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <Text style={styles.modalTitleModern}>Set Daily Goal</Text>
             <Text style={styles.modalSubtitle}>Enter your information to calculate your daily calorie needs</Text>
@@ -1061,9 +1074,15 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 24,
-    width: '80%',
+    padding: 20,           // Daha az padding
+    width: '85%',          // Genişliği artır
+    maxHeight: '80%',      // Yüksekliği sınırla
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
   },
   modalTitle: {
     fontSize: 20,
@@ -1361,9 +1380,9 @@ const styles = StyleSheet.create({
   modalContentModern: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20, // Daha az padding
-    width: '85%', // Genişliği küçült
-    maxHeight: '80%', // Yüksekliği sınırlı tut
+    padding: 20,           // Daha az padding
+    width: '85%',          // Genişliği artır
+    maxHeight: '80%',      // Yüksekliği sınırla
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
