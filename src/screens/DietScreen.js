@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ScrollView, Alert, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_BASE_URL from '../config/config';
 
-const DIET_TYPES = [
+ const API_KEY = 'f0d59d87a6msh534adefccaa272dp1b7d2fjsn95a61f9d747c'; // kendi RapidAPI anahtarın
+ const API_HOST = 'tasty.p.rapidapi.com';
+ const API_URL = 'https://tasty.p.rapidapi.com/recipes/list';
+
+const mealTypes = [
+  { key: 'breakfast', label: 'Breakfast', query: 'breakfast' },
+  { key: 'lunch', label: 'Lunch', query: 'lunch' },
+  { key: 'dinner', label: 'Dinner', query: 'dinner' },
+  { key: 'snack', label: 'Snack', query: 'snack' },
+];
+
+ const DIET_TYPES = [
   { label: 'None', value: '' },
   { label: 'Vegan', value: 'vegan' },
   { label: 'Vegetarian', value: 'vegetarian' },
@@ -47,6 +58,20 @@ const DietScreen = ({ navigation, route }) => {
   const [allergies, setAllergies] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [preferences, setPreferences] = useState({
+    calories: 2000,
+    diet: '',
+    allergies: [],
+    gender: 'male',
+    age: '',
+    height: '',
+    weight: '',
+    activity: 1.2,
+    goal: 'maintain',
+  });
+  const [todayMenu, setTodayMenu] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+
   const calories = calculateCalories({ gender, age: Number(age), height: Number(height), weight: Number(weight), activity });
 
   const toggleAllergy = (value) => {
@@ -55,21 +80,60 @@ const DietScreen = ({ navigation, route }) => {
     );
   };
   const handleSave = async () => {
-      const preferences = {
-        calories,
-        diet,
-        allergies,
-        gender,
-        age,
-        height,
-        weight,
-        activity,
-      };
-      await AsyncStorage.setItem('dietPreferences', JSON.stringify(preferences));
-      setModalVisible(false);
-      navigation.replace('DietPreferencesScreen', { preferences }); // Ekran adı düzeltildi
+    const newPreferences = {
+      calories,
+      diet,
+      allergies,
+      gender,
+      age,
+      height,
+      weight,
+      activity,
     };
-    const handleCancel = () => {
+
+    try {
+      // Önce preferences'ı kaydet
+      await AsyncStorage.setItem('dietPreferences', JSON.stringify(newPreferences));
+      setPreferences(newPreferences);
+      setModalVisible(false);
+
+      // Yeni menü oluştur
+      setMenuLoading(true);
+      const today = new Date().toISOString().slice(0, 10);
+      const menu = [];
+
+      for (const mealType of mealTypes) {
+        let query = mealType.query;
+        if (newPreferences.diet && newPreferences.diet !== '') {
+          query += ` ${newPreferences.diet}`;
+        }
+        
+        let recipes = await fetchTastyRecipes(query);
+        let filtered = recipes.filter(r => {
+          if (newPreferences.calories && r.nutrition && r.nutrition.calories > newPreferences.calories / 4) return false;
+          return true;
+        });
+
+        if (filtered.length === 0) filtered = recipes;
+
+        menu.push({
+          mealType: mealType.key,
+          recipe: filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : null
+        });
+      }
+
+      // Yeni menüyü hem state'e hem de AsyncStorage'a kaydet
+      setTodayMenu(menu);
+      await AsyncStorage.setItem('todayMenu', JSON.stringify({ date: today, menu }));
+      setMenuLoading(false);
+
+    } catch (error) {
+      console.error('Error:', error);
+      Alert.alert('Error', 'Failed to update menu. Please try again.');
+      setMenuLoading(false);
+    }
+  };
+  const handleCancel = () => {
     setModalVisible(false);
     setGender('male');
     setAge('');
@@ -78,88 +142,282 @@ const DietScreen = ({ navigation, route }) => {
     setActivity(1.2);
     setDiet('');
     setAllergies([]);
-    };
-    const handleOpenModal = async () => {
-      setModalVisible(true);
-    };
-    const handleViewPreferences = async () => {
-      const savedPreferences = await AsyncStorage.getItem('dietPreferences');
-      if (!savedPreferences) {
-        Alert.alert('No Diet Found', 'You have not created a diet plan yet. Please create one first.');
-        return;
-      }
-      navigation.navigate('DietPreferencesScreen');
-    };
+  };
+  const handleOpenModal = async () => {
+    setModalVisible(true);
+  };
+  const handleViewPreferences = async () => {
+    const savedPreferences = await AsyncStorage.getItem('dietPreferences');
+    if (!savedPreferences) {
+      Alert.alert('No Diet Found', 'You have not created a diet plan yet. Please create one first.');
+      return;
+    }
+    navigation.navigate('DietPreferencesScreen');
+  };
 
-    useEffect(() => {
-      const fetchUserData = async () => {
-        try {
-          const userEmail = await AsyncStorage.getItem('userEmail');
-          if (userEmail) {
-            const response = await fetch(`${API_BASE_URL}/api/user/profile?email=${userEmail}`);
-            const data = await response.json();
-            setGender(data.gender || 'male');
-            // Calculate age from birthDate if available
-            if (data.birthDate) {
-              const birth = new Date(data.birthDate);
-              const today = new Date();
-              let years = today.getFullYear() - birth.getFullYear();
-              const m = today.getMonth() - birth.getMonth();
-              if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
-              setAge(years.toString());
-            } else {
-              setAge('');
-            }
-            setHeight(data.height ? data.height.toString() : '');
-            setWeight(data.weight ? data.weight.toString() : '');
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userEmail = await AsyncStorage.getItem('userEmail');
+        if (userEmail) {
+          const response = await fetch(`${API_BASE_URL}/api/user/profile?email=${userEmail}`);
+          const data = await response.json();
+          setGender(data.gender || 'male');
+          // Calculate age from birthDate if available
+          if (data.birthDate) {
+            const birth = new Date(data.birthDate);
+            const today = new Date();
+            let years = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
+            setAge(years.toString());
           } else {
-            setGender('male');
             setAge('');
-            setHeight('');
-            setWeight('');
           }
-        } catch (e) {
-          // fallback to defaults
+          setHeight(data.height ? data.height.toString() : '');
+          setWeight(data.weight ? data.weight.toString() : '');
+        } else {
           setGender('male');
           setAge('');
           setHeight('');
           setWeight('');
         }
-        setActivity(1.2);
-        setDiet('');
-        setAllergies([]);
-        setLoading(false);
-      };
-      fetchUserData();
-    }, []);
-
-    useEffect(() => {
-      if (route.params?.openModal) { // route.params üzerinden openModal kontrolü
-        setModalVisible(true); // Modalı aç
+      } catch (e) {
+        // fallback to defaults
+        setGender('male');
+        setAge('');
+        setHeight('');
+        setWeight('');
       }
-    }, [route.params]);
+      setActivity(1.2);
+      setDiet('');
+      setAllergies([]);
+      setLoading(false);
+    };
+    fetchUserData();
+  }, []);
 
-    if (loading) {
-        return null;
+  useEffect(() => {
+    if (route.params?.openModal) { // route.params üzerinden openModal kontrolü
+      setModalVisible(true); // Modalı aç
+    }
+  }, [route.params]);
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const savedPreferences = await AsyncStorage.getItem('dietPreferences');
+        if (savedPreferences) {
+          const parsedPreferences = JSON.parse(savedPreferences);
+          setPreferences(parsedPreferences);
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
       }
-    return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
-          <View style={styles.container}>
-            <Text style={styles.header}>Welcome to your Diet Planner!</Text>
-            <Text style={styles.description}>
-              Plan your weekly meals based on your goals and preferences. Get personalized meal suggestions and organize your diet easily.
-            </Text>
-            <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
-              <Text style={styles.buttonText}>Plan My Diet</Text>
-            </TouchableOpacity>
-            {/* Yeni Buton */}
-            <TouchableOpacity
-              style={[styles.button, styles.preferencesButton]}
-              onPress={handleViewPreferences} // Updated to use the new function
-            >
-              <Text style={styles.buttonText}>View My Diet Preferences</Text>
-            </TouchableOpacity>
+    };
+    loadPreferences();
+  }, []);
+
+  useEffect(() => {
+    const loadMenu = async () => {
+      setMenuLoading(true);
+      const today = new Date().toISOString().slice(0, 10);
+      try {
+        const saved = await AsyncStorage.getItem('todayMenu');
+        if (saved) {
+          const { date, menu } = JSON.parse(saved);
+          if (date === today) {
+            setTodayMenu(menu);
+            setMenuLoading(false);
+            return;
+          }
+        }
+        // Menü yoksa veya gün değiştiyse yeni menü oluştur
+        await fetchTodayMenuAndSave(preferences, today);
+      } catch (error) {
+        setMenuLoading(false);
+      }
+    };
+    loadMenu();
+  }, []);
+
+  async function fetchTastyRecipes(query) {
+    try {
+      const res = await fetch(`${API_URL}?from=0&size=20&q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': API_KEY,
+          'X-RapidAPI-Host': API_HOST,
+        },
+      });
+      if (!res.ok) {
+        // Hata kodunu konsola yaz
+        console.log('API error:', res.status, await res.text());
+        throw new Error('API error: ' + res.status);
+      }
+      const data = await res.json();
+      return data.results || [];
+    } catch (e) {
+      console.log('fetchTastyRecipes error:', e);
+      return [];
+    }
+  }
+
+  function filterTastyRecipes(recipes, preferences, maxCalories) {
+    return recipes.filter(r => {
+      if (maxCalories && r.nutrition && r.nutrition.calories && r.nutrition.calories > maxCalories) return false;
+      if (preferences.diet && preferences.diet !== '' && r.tags && !r.tags.some(t => t.name.toLowerCase().includes(preferences.diet.toLowerCase()))) return false;
+      if (preferences.allergies && preferences.allergies.length > 0 && r.sections) {
+        const allIngredients = r.sections.flatMap(s => s.components.map(c => c.ingredient.name.toLowerCase()));
+        if (preferences.allergies.some(a => allIngredients.includes(a.toLowerCase()))) return false;
+      }
+      return true;
+    });
+  }
+
+  function getMealNutrition(recipe) {
+    if (!recipe || !recipe.nutrition) return null;
+    return {
+      calories: recipe.nutrition.calories,
+      protein: recipe.nutrition.protein,
+      fat: recipe.nutrition.fat,
+      carbs: recipe.nutrition.carbohydrates,
+    };
+  }
+
+  const fetchTodayMenuAndSave = async (preferences, today) => {
+    setMenuLoading(true);
+    try {
+      const menu = [];
+      for (const mealType of mealTypes) {
+        let query = mealType.query;
+        if (preferences.diet && preferences.diet !== '') query += ` ${preferences.diet}`;
+        let recipes = await fetchTastyRecipes(query);
+        let filtered = filterTastyRecipes(recipes, preferences, preferences.calories ? preferences.calories / 4 : undefined);
+        if (filtered.length === 0) {
+          recipes = await fetchTastyRecipes(mealType.query);
+          filtered = recipes;
+        }
+        menu.push({
+          mealType: mealType.key,
+          recipe: filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : null,
+        });
+      }
+      setTodayMenu(menu);
+      await AsyncStorage.setItem('todayMenu', JSON.stringify({ date: today, menu }));
+    } catch (error) {
+      Alert.alert('Error', 'Failed to fetch today\'s menu. Please try again later.');
+    } finally {
+      setMenuLoading(false);
+    }
+  };
+
+  if (loading) {
+      return null;
+    }
+  return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
+            <Text style={styles.buttonText}>Plan My Diet</Text>
+          </TouchableOpacity>
+
+          {/* View My Diet Preferences butonunu kaldırdık */}
+
+          {/* Diet Preferences Card */}
+          <View style={styles.card}>
+            <Text style={styles.header2}>Your Diet Preferences</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>Calories:</Text>
+              <Text style={styles.value}>{preferences.calories} kcal</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Diet Type:</Text>
+              <Text style={styles.value}>{preferences.diet || 'None'}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>Allergies:</Text>
+              <Text style={styles.value}>
+                {preferences.allergies.length > 0 ? preferences.allergies.join(', ') : 'None'}
+              </Text>
+            </View>
           </View>
+
+          {/* Today's Menu Card */}
+          <View style={styles.card}>
+            <Text style={styles.header2}>Today's Menu</Text>
+            {menuLoading ? (
+              <ActivityIndicator size="large" color="#4CAF50" />
+            ) : (
+              todayMenu.map((meal, index) => {
+                const recipe = meal.recipe;
+                const nutrition = getMealNutrition(recipe);
+                return (
+                  <View key={index} style={styles.mealCardContainer}>
+                    <View style={styles.mealCard}>
+                      <Text style={styles.mealType}>
+                        {meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}
+                      </Text>
+                      {recipe ? (
+                        <>
+                          <Text style={styles.mealName}>{recipe.name}</Text>
+                          {recipe.thumbnail_url && (
+                            <Image source={{ uri: recipe.thumbnail_url }} style={styles.mealImage} />
+                          )}
+                          {nutrition && (
+                            <Text style={styles.nutritionText}>
+                              <Text>Calories: {nutrition.calories} kcal</Text>
+                              <Text> | </Text>
+                              <Text>Protein: {nutrition.protein}g</Text>
+                              <Text> | </Text>
+                              <Text>Fat: {nutrition.fat}g</Text>
+                              <Text> | </Text>
+                              <Text>Carbs: {nutrition.carbs}g</Text>
+                            </Text>
+                          )}
+                          
+                          {recipe.sections && recipe.sections.length > 0 && (
+                            <View style={styles.sectionContainer}>
+                              <Text style={styles.sectionTitle}>Ingredients</Text>
+                              {recipe.sections.map((section, idx) => (
+                                <View key={idx}>
+                                  {section.components.map((component, compIdx) => (
+                                    <Text key={compIdx} style={styles.ingredientText}>
+                                      <Text>• </Text>
+                                      <Text>
+                                        {component.raw_text || 
+                                          `${component.measurements[0]?.quantity || ''} ${component.ingredient?.name || ''}`}
+                                      </Text>
+                                    </Text>
+                                  ))}
+                                </View>
+                              ))}
+                            </View>
+                          )}
+
+                          {recipe.instructions && recipe.instructions.length > 0 && (
+                            <View style={styles.sectionContainer}>
+                              <Text style={styles.sectionTitle}>Instructions</Text>
+                              {recipe.instructions.map((instruction, idx) => (
+                                <Text key={idx} style={styles.instructionText}>
+                                  <Text>{`${idx + 1}. `}</Text>
+                                  <Text>{instruction.display_text}</Text>
+                                </Text>
+                              ))}
+                            </View>
+                          )}
+                        </>
+                      ) : (
+                        <Text style={styles.noRecipeText}>No recipe found</Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+
+          {/* Modal burada */}
           <Modal
             visible={modalVisible}
             animationType="slide"
@@ -271,8 +529,9 @@ const DietScreen = ({ navigation, route }) => {
               </View>
             </View>
           </Modal>
-        </SafeAreaView>
-      );
+        </ScrollView>
+      </SafeAreaView>
+    );
 };
 const styles = StyleSheet.create({
   container: {
@@ -333,8 +592,8 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   radioBtn: {
     flex: 1,
@@ -475,6 +734,103 @@ const styles = StyleSheet.create({
   preferencesButton: {
     backgroundColor: '#4CAF50', // Yeşil renk
     marginTop: 12, // Üst boşluk
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    margin: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    alignItems: 'stretch',
+  },
+  value: {
+    fontSize: 16,
+    color: '#2d4d6a',
+    fontWeight: 'bold',
+  },
+  mealCardContainer: {
+    marginBottom: 24,
+  },
+  mealCard: {
+    backgroundColor: '#ECECECFF',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 12,    // Yeni eklendi
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    borderWidth: 1,  // Yeni eklendi
+    borderColor: '#eee', // Yeni eklendi
+  },
+  mealType: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2d4d6a',
+    marginBottom: 8,
+  },
+  mealName: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 4,
+  },
+  mealImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  nutritionText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  noRecipeText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  scrollContainer: {
+    padding: 16,
+    backgroundColor: '#eaf3ef',
+  },
+  header2: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2d4d6a',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  sectionContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2d4d6a',
+    marginBottom: 8,
+  },
+  ingredientText: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 4,
+    paddingLeft: 8,
+  },
+  instructionText: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 8,
+    lineHeight: 20,
+    paddingLeft: 8,
   },
 });
 

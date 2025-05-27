@@ -179,40 +179,65 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteProfile = async () => {
-    try {
-      const email = await AsyncStorage.getItem('userEmail'); // Retrieve the user's email
-      if (!email) {
-        Alert.alert('Error', 'No user found to delete.');
-        return;
-      }
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const email = await AsyncStorage.getItem('userEmail');
+              if (!email) {
+                Alert.alert('Error', 'No user found to delete.');
+                return;
+              }
 
-      // Send DELETE request to the backend
-      const response = await fetch(`${DELETE_URL}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }) // Pass email in the request body
-      });
+              const response = await fetch(`${DELETE_URL}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+              });
 
-      const data = await response.json();
+              const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to delete profile.');
-      }
+              if (!response.ok) {
+                throw new Error(data.message || 'Failed to delete profile.');
+              }
 
-      // Clear user data from AsyncStorage
-      await AsyncStorage.clear();
+              // AsyncStorage'ı temizle
+              await AsyncStorage.clear();
+              
+              // AuthContext'ten signOut'u çağır
+              await signOut();
 
-      // Navigate to the login screen and reset the navigation stack
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'LoginScreen' }] // Corrected screen name
-      });
+              Alert.alert(
+                'Account Deleted',
+                'Your account has been successfully deleted.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // App.js'deki route ismiyle eşleştirdik
+                      navigation.navigate('LoginScreen');
+                    }
+                  }
+                ]
+              );
 
-      Alert.alert('Success', 'Your profile has been deleted.');
-    } catch (error) {
-      console.error('Error deleting profile:', error);
-      Alert.alert('Error', error.message || 'Failed to delete profile.');
-    }
+            } catch (error) {
+              console.error('Error deleting profile:', error);
+              Alert.alert('Error', error.message || 'Failed to delete profile.');
+            }
+          }
+        }
+      ]
+    );
   };
 
   // BMI kategorisi fonksiyonu
