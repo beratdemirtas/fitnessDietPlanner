@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, Platform, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert, 
+  Image, 
+  Platform, 
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -70,7 +84,7 @@ const RegisterScreen = () => {
       Alert.alert('Success', 'Registration successful! Please login.', [
         {
           text: 'OK',
-          onPress: () => navigation.navigate('Login')
+          onPress: () => navigation.navigate('LoginScreen')
         }
       ]);
     } catch (error) {
@@ -82,68 +96,87 @@ const RegisterScreen = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#eaf3ef' }}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Register</Text>
-        <TouchableOpacity style={styles.photoPicker} onPress={pickImage}>
-          {photo ? (
-            <Image source={{ uri: photo }} style={styles.photo} />
-          ) : (
-            <Text style={styles.photoText}>Select Photo</Text>
-          )}
-        </TouchableOpacity>
-        <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
-        <TextInput style={styles.input} placeholder="Surname" value={surname} onChangeText={setSurname} />
-        <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
-        <TextInput style={styles.input} placeholder="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
-        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-          <Text style={{ color: birthDate ? '#222' : '#888' }}>{birthDate ? birthDate.toISOString().split('T')[0] : 'Birth Date'}</Text>
-        </TouchableOpacity>
-        {showDatePicker && (
-          <DateTimePicker
-            value={birthDate}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(event, selectedDate) => {
-              setShowDatePicker(false);
-              if (selectedDate) setBirthDate(selectedDate);
-            }}
-            maximumDate={new Date()}
-          />
-        )}
-        <View style={styles.genderRow}>
-          <TouchableOpacity style={[styles.genderBtn, gender === 'male' && styles.genderBtnActive]} onPress={() => setGender('male')}>
-            <Text style={[styles.genderText, gender === 'male' && styles.genderTextActive]}>Male</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.genderBtn, gender === 'female' && styles.genderBtnActive]} onPress={() => setGender('female')}>
-            <Text style={[styles.genderText, gender === 'female' && styles.genderTextActive]}>Female</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.genderBtn, gender === 'other' && styles.genderBtnActive]} onPress={() => setGender('other')}>
-            <Text style={[styles.genderText, gender === 'other' && styles.genderTextActive]}>Other</Text>
-          </TouchableOpacity>
-        </View>
-        <TextInput style={styles.input} placeholder="Height (cm)" value={height} onChangeText={setHeight} keyboardType="numeric" />
-        <TextInput style={styles.input} placeholder="Weight (kg)" value={weight} onChangeText={setWeight} keyboardType="numeric" />
-        <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Register</Text>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')} style={styles.linkButton}>
-          <Text style={styles.linkText}>Already have an account? Login</Text>
-        </TouchableOpacity>
-      </View>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContainer}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.container}>
+              <Text style={styles.title}>Register</Text>
+              <TouchableOpacity style={styles.photoPicker} onPress={pickImage}>
+                {photo ? (
+                  <Image source={{ uri: photo }} style={styles.photo} />
+                ) : (
+                  <Text style={styles.photoText}>Select Photo</Text>
+                )}
+              </TouchableOpacity>
+              <TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName} />
+              <TextInput style={styles.input} placeholder="Surname" value={surname} onChangeText={setSurname} />
+              <TextInput style={styles.input} placeholder="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+              <TextInput style={styles.input} placeholder="Password" value={password} onChangeText={setPassword} secureTextEntry />
+              <TextInput style={styles.input} placeholder="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+              <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+                <Text style={{ color: birthDate ? '#222' : '#888' }}>{birthDate ? birthDate.toISOString().split('T')[0] : 'Birth Date'}</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={birthDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, selectedDate) => {
+                    setShowDatePicker(false);
+                    if (selectedDate) setBirthDate(selectedDate);
+                  }}
+                  maximumDate={new Date()}
+                />
+              )}
+              <View style={styles.genderRow}>
+                <TouchableOpacity style={[styles.genderBtn, gender === 'male' && styles.genderBtnActive]} onPress={() => setGender('male')}>
+                  <Text style={[styles.genderText, gender === 'male' && styles.genderTextActive]}>Male</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.genderBtn, gender === 'female' && styles.genderBtnActive]} onPress={() => setGender('female')}>
+                  <Text style={[styles.genderText, gender === 'female' && styles.genderTextActive]}>Female</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.genderBtn, gender === 'other' && styles.genderBtnActive]} onPress={() => setGender('other')}>
+                  <Text style={[styles.genderText, gender === 'other' && styles.genderTextActive]}>Other</Text>
+                </TouchableOpacity>
+              </View>
+              <TextInput style={styles.input} placeholder="Height (cm)" value={height} onChangeText={setHeight} keyboardType="numeric" />
+              <TextInput style={styles.input} placeholder="Weight (kg)" value={weight} onChangeText={setWeight} keyboardType="numeric" />
+              <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={loading}>
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Register</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')} style={styles.linkButton}>
+                <Text style={styles.linkText}>Already have an account? Login</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#eaf3ef' },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#eaf3ef',
+    paddingHorizontal: 20,
+  },
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: '#222' },
-  input: { width: '80%', backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 12, fontSize: 16 },
-  button: { backgroundColor: '#32CD32', padding: 14, borderRadius: 8, width: '80%', alignItems: 'center', marginTop: 8 },
+  input: { width: '100%', backgroundColor: '#fff', padding: 12, borderRadius: 8, marginBottom: 12, fontSize: 16 },
+  button: { backgroundColor: '#32CD32', padding: 14, borderRadius: 8, width: '100%', alignItems: 'center', marginTop: 8 },
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
   linkText: { color: '#32CD32', marginTop: 18, fontWeight: 'bold' },
   photoPicker: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 2, borderColor: '#32CD32' },
@@ -155,6 +188,11 @@ const styles = StyleSheet.create({
   genderText: { color: '#222', fontWeight: 'bold' },
   genderTextActive: { color: '#fff' },
   linkButton: { marginTop: 20, alignItems: 'center' },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
 });
 
 export default RegisterScreen;

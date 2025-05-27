@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image, Alert, TouchableWithoutFeedback, Keyboard, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,15 @@ import API_BASE_URL from '../config/config'; // <-- Bunu ekle
 const USDA_API_KEY = 'q73lnVjXeJ4Gp1bowe8yjT0fVgf7AbiNgZZi3A6Z';
 const USDA_API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
 
+const mealTypes = [
+  { label: 'Breakfast', value: 'breakfast' },
+  { label: 'Lunch', value: 'lunch' },
+  { label: 'Dinner', value: 'dinner' },
+  { label: 'Snack', value: 'snack' },
+  { label: 'Drink', value: 'drink' },
+  { label: 'Custom', value: 'custom' },
+];
+
 export default function MyMealsScreen() {
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState(null);
@@ -17,6 +26,9 @@ export default function MyMealsScreen() {
   const [favorites, setFavorites] = useState([]);
   const [userEmail, setUserEmail] = useState('');
   const [myMeals, setMyMeals] = useState([]);
+  const [showMealTypeModal, setShowMealTypeModal] = useState(false);
+  const [selectedFavoriteMeal, setSelectedFavoriteMeal] = useState(null);
+  const [selectedMealType, setSelectedMealType] = useState('breakfast');
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -84,9 +96,10 @@ export default function MyMealsScreen() {
   };
 
   const removeFavorite = async (id) => {
+    const email = await AsyncStorage.getItem('userEmail');
     const newFavs = favorites.filter(f => f.id !== id);
     setFavorites(newFavs);
-    await AsyncStorage.setItem('favoriteMeals', JSON.stringify(newFavs));
+    await AsyncStorage.setItem(`favoriteMeals_${email}`, JSON.stringify(newFavs));
   };
 
   const getMyMealsKey = (email) => `myMeals_${email}`;
@@ -145,7 +158,37 @@ export default function MyMealsScreen() {
     if (favorites.some(f => f.id === favMeal.id)) return;
     const newFavs = [favMeal, ...favorites];
     setFavorites(newFavs);
-    await AsyncStorage.setItem('favoriteMeals', JSON.stringify(newFavs));
+    const email = await AsyncStorage.getItem('userEmail');
+    await AsyncStorage.setItem(`favoriteMeals_${email}`, JSON.stringify(newFavs));
+  };
+
+  const handleConsumeWithType = async () => {
+    if (!selectedFavoriteMeal) return;
+    let meal = { ...selectedFavoriteMeal, mealType: selectedMealType };
+
+    // Eğer foods dizisi yoksa oluştur
+    if (!meal.foods) {
+      meal.foods = [{
+        description: meal.name,
+        portion: meal.portion,
+        protein: meal.protein,
+        fat: meal.fat,
+        carbs: meal.carbs,
+        calories: meal.calories,
+      }];
+    }
+
+    setShowMealTypeModal(false);
+    setSelectedFavoriteMeal(null);
+    await handleConsume(meal);
+  };
+
+  const removeMyMeal = async (id) => {
+    const email = await AsyncStorage.getItem('userEmail');
+    const key = getMyMealsKey(email);
+    const newMeals = myMeals.filter(m => m.id !== id);
+    setMyMeals(newMeals);
+    await AsyncStorage.setItem(key, JSON.stringify(newMeals));
   };
 
   return (
@@ -222,9 +265,12 @@ export default function MyMealsScreen() {
                 </View>
                 <View style={{ flexDirection: 'column', alignItems: 'flex-end', alignSelf: 'flex-start', minWidth: 90 }}>
                   <TouchableOpacity onPress={() => handleConsume(meal)} style={{ marginBottom: 4 }}>
-                    <View style={{ backgroundColor: '#4CAF50', borderRadius: 8, paddingVertical: 4, paddingHorizontal: 12 }}>
-                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>Consume</Text>
+                    <View style={styles.consumeBtn}>
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>🍽️ Consume</Text>
                     </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => removeMyMeal(meal.id)}>
+                    <Text style={styles.deleteBtnText}>🗑️</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -256,6 +302,7 @@ export default function MyMealsScreen() {
           {favorites.length === 0 && <Text style={styles.infoText}>No favorites yet.</Text>}
           {favorites.map(meal => (
             <View key={meal.id} style={styles.mealCard}>
+              {/* Favori kartı içeriği My Meals ile aynı hizaya getirildi */}
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', width: '100%' }}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.mealName, { textAlign: 'left', marginBottom: 0 }]} numberOfLines={2} ellipsizeMode='tail'>
@@ -263,8 +310,16 @@ export default function MyMealsScreen() {
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'column', alignItems: 'flex-end', alignSelf: 'flex-start', minWidth: 90 }}>
-                  <TouchableOpacity style={styles.consumeBtn} onPress={() => handleConsume(meal)}>
-                    <Text style={styles.consumeBtnText}>🍽️ Consume</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedFavoriteMeal(meal);
+                      setShowMealTypeModal(true);
+                    }}
+                    style={{ marginBottom: 4 }}
+                  >
+                    <View style={styles.consumeBtn}>
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 15 }}>🍽️ Consume</Text>
+                    </View>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.deleteBtn} onPress={() => removeFavorite(meal.id)}>
                     <Text style={styles.deleteBtnText}>🗑️</Text>
@@ -287,6 +342,64 @@ export default function MyMealsScreen() {
           ))}
         </View>
       </ScrollView>
+      <Modal
+        visible={showMealTypeModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMealTypeModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}>
+          <View style={{
+            backgroundColor: '#fff',
+            borderRadius: 16,
+            padding: 24,
+            width: '80%',
+            alignItems: 'center'
+          }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12 }}>Select Meal Type</Text>
+            {mealTypes.map(mt => (
+              <TouchableOpacity
+                key={mt.value}
+                style={{
+                  backgroundColor: selectedMealType === mt.value ? '#4CAF50' : '#f5f5f5',
+                  paddingVertical: 10,
+                  paddingHorizontal: 18,
+                  borderRadius: 10,
+                  marginBottom: 8,
+                  width: '100%',
+                  alignItems: 'center',
+                  borderWidth: selectedMealType === mt.value ? 0 : 1,
+                  borderColor: '#ddd',
+                }}
+                onPress={() => setSelectedMealType(mt.value)}
+              >
+                <Text style={{
+                  color: selectedMealType === mt.value ? '#fff' : '#222',
+                  fontWeight: 'bold',
+                  fontSize: 16
+                }}>{mt.label}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={[styles.consumeBtn, { width: '100%', marginTop: 10 }]}
+              onPress={handleConsumeWithType}
+            >
+              <Text style={styles.consumeBtnText}>Confirm</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.deleteBtn, { marginTop: 10 }]}
+              onPress={() => setShowMealTypeModal(false)}
+            >
+              <Text style={styles.deleteBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -321,12 +434,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 2,
-  },
-  consumeBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 15,
-    letterSpacing: 0.5,
   },
   foodName: {
     fontSize: 15,

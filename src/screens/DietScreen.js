@@ -92,41 +92,16 @@ const DietScreen = ({ navigation, route }) => {
     };
 
     try {
-      // Önce preferences'ı kaydet
-      await AsyncStorage.setItem('dietPreferences', JSON.stringify(newPreferences));
+      const userEmail = await AsyncStorage.getItem('userEmail');
+      // Kullanıcıya özel kaydetme
+      await AsyncStorage.setItem(`dietPreferences_${userEmail}`, JSON.stringify(newPreferences));
       setPreferences(newPreferences);
       setModalVisible(false);
 
       // Yeni menü oluştur
       setMenuLoading(true);
       const today = new Date().toISOString().slice(0, 10);
-      const menu = [];
-
-      for (const mealType of mealTypes) {
-        let query = mealType.query;
-        if (newPreferences.diet && newPreferences.diet !== '') {
-          query += ` ${newPreferences.diet}`;
-        }
-        
-        let recipes = await fetchTastyRecipes(query);
-        let filtered = recipes.filter(r => {
-          if (newPreferences.calories && r.nutrition && r.nutrition.calories > newPreferences.calories / 4) return false;
-          return true;
-        });
-
-        if (filtered.length === 0) filtered = recipes;
-
-        menu.push({
-          mealType: mealType.key,
-          recipe: filtered.length > 0 ? filtered[Math.floor(Math.random() * filtered.length)] : null
-        });
-      }
-
-      // Yeni menüyü hem state'e hem de AsyncStorage'a kaydet
-      setTodayMenu(menu);
-      await AsyncStorage.setItem('todayMenu', JSON.stringify({ date: today, menu }));
-      setMenuLoading(false);
-
+      await fetchTodayMenuAndSave(newPreferences, today, userEmail);
     } catch (error) {
       console.error('Error:', error);
       Alert.alert('Error', 'Failed to update menu. Please try again.');
@@ -203,10 +178,12 @@ const DietScreen = ({ navigation, route }) => {
     }
   }, [route.params]);
 
+  // loadPreferences fonksiyonunu güncelle
   useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const savedPreferences = await AsyncStorage.getItem('dietPreferences');
+        const userEmail = await AsyncStorage.getItem('userEmail');
+        const savedPreferences = await AsyncStorage.getItem(`dietPreferences_${userEmail}`); // userEmail'e göre saklama
         if (savedPreferences) {
           const parsedPreferences = JSON.parse(savedPreferences);
           setPreferences(parsedPreferences);
@@ -218,12 +195,14 @@ const DietScreen = ({ navigation, route }) => {
     loadPreferences();
   }, []);
 
+  // loadMenu useEffect'ini güncelle
   useEffect(() => {
     const loadMenu = async () => {
       setMenuLoading(true);
       const today = new Date().toISOString().slice(0, 10);
       try {
-        const saved = await AsyncStorage.getItem('todayMenu');
+        const userEmail = await AsyncStorage.getItem('userEmail');
+        const saved = await AsyncStorage.getItem(`todayMenu_${userEmail}`); // userEmail'e göre saklama
         if (saved) {
           const { date, menu } = JSON.parse(saved);
           if (date === today) {
@@ -233,7 +212,7 @@ const DietScreen = ({ navigation, route }) => {
           }
         }
         // Menü yoksa veya gün değiştiyse yeni menü oluştur
-        await fetchTodayMenuAndSave(preferences, today);
+        await fetchTodayMenuAndSave(preferences, today, userEmail);
       } catch (error) {
         setMenuLoading(false);
       }
@@ -285,7 +264,8 @@ const DietScreen = ({ navigation, route }) => {
     };
   }
 
-  const fetchTodayMenuAndSave = async (preferences, today) => {
+  // fetchTodayMenuAndSave fonksiyonunu güncelle
+  const fetchTodayMenuAndSave = async (preferences, today, userEmail) => {
     setMenuLoading(true);
     try {
       const menu = [];
@@ -304,7 +284,8 @@ const DietScreen = ({ navigation, route }) => {
         });
       }
       setTodayMenu(menu);
-      await AsyncStorage.setItem('todayMenu', JSON.stringify({ date: today, menu }));
+      // Kullanıcıya özel kaydetme
+      await AsyncStorage.setItem(`todayMenu_${userEmail}`, JSON.stringify({ date: today, menu }));
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch today\'s menu. Please try again later.');
     } finally {
@@ -556,7 +537,8 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: '#6495ED',
     paddingVertical: 16,
-    paddingHorizontal: 36,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
     borderRadius: 12,
   },
   buttonText: {
@@ -756,17 +738,17 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   mealCard: {
-    backgroundColor: '#ECECECFF',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 12,    // Yeni eklendi
+    backgroundColor: '#f0f0f0', // Beyaz arka plan
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
     elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
-    borderWidth: 1,  // Yeni eklendi
-    borderColor: '#eee', // Yeni eklendi
+    borderWidth: 1,
+    borderColor: '#eee',
   },
   mealType: {
     fontSize: 18,
@@ -776,7 +758,8 @@ const styles = StyleSheet.create({
   },
   mealName: {
     fontSize: 16,
-    color: '#333',
+    fontWeight: '700',
+    color: '#2d4d6a',
     marginBottom: 4,
   },
   mealImage: {
@@ -786,9 +769,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   nutritionText: {
-    fontSize: 14,
+    fontSize: 10, 
     color: '#666',
-    marginTop: 4,
+    marginTop: 1,
+    marginBottom: 1,
+    backgroundColor: '#f0f0f0',
+    padding: 8,
+    borderRadius: 6,
+    textAlign: 'center',
   },
   noRecipeText: {
     fontSize: 14,
@@ -797,7 +785,7 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   scrollContainer: {
-    padding: 16,
+    padding: 1,
     backgroundColor: '#eaf3ef',
   },
   header2: {
@@ -808,30 +796,55 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sectionContainer: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
+    backgroundColor: '#f0f0f0', // Hafif gri arka plan
+    borderRadius: 8,
+    padding: 1,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16, // Küçültüldü
+    fontWeight: '600',
     color: '#2d4d6a',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   ingredientText: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 4,
-    paddingLeft: 8,
+    fontSize: 13, // Küçültüldü
+    color: '#555',
+    marginBottom: 1,
+    paddingLeft: 1,
+    lineHeight: 17,
   },
   instructionText: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 8,
-    lineHeight: 20,
-    paddingLeft: 8,
+    fontSize: 13, // Küçültüldü
+    color: '#555',
+    marginBottom: 1,
+    lineHeight: 17,
+    paddingLeft: 3,
   },
+  ingredientsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -4,
+  },
+  ingredientItem: {
+    flex: 1,
+    minWidth: '45%',
+    maxWidth: '50%',
+    paddingHorizontal: 4,
+    marginBottom: 4,
+  },
+  instructionStep: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  stepNumber: {
+    minWidth: 20,
+    color: '#6495ED',
+    fontWeight: 'bold',
+  }
 });
 
 export default DietScreen;

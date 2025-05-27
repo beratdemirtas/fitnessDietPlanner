@@ -189,18 +189,23 @@ export default function MealTrackerScreen() {
       return true;
     });
 
+  // FAVORİLERİ YÜKLE
   const loadFavorites = async () => {
     try {
-      const favs = await AsyncStorage.getItem('favoriteMeals');
+      const email = await AsyncStorage.getItem('userEmail');
+      const favs = await AsyncStorage.getItem(`favoriteMeals_${email}`);
       if (favs) setFavorites(JSON.parse(favs));
+      else setFavorites([]);
     } catch (e) {
-      // ignore
+      setFavorites([]);
     }
   };
 
+  // FAVORİLERİ KAYDET
   const saveFavorites = async (favList) => {
     setFavorites(favList);
-    await AsyncStorage.setItem('favoriteMeals', JSON.stringify(favList));
+    const email = await AsyncStorage.getItem('userEmail');
+    await AsyncStorage.setItem(`favoriteMeals_${email}`, JSON.stringify(favList));
   };
 
   const handleSearch = async (text) => {
