@@ -16,7 +16,9 @@ React Native (frontend)
 Node.js + Express (backend)
 MongoDB + Mongoose (database)
 AsyncStorage (local storage)
-Tasty API via RapidAPI (meal data)<img width="132" height="286" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-09-09 at 20 05 38" src="https://github.com/user-attachments/assets/5b1bae12-ab18-48d5-844b-41a5a7745f0c" />
+Tasty API via RapidAPI (meal data)
+
+<img width="132" height="286" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-09-09 at 20 05 38" src="https://github.com/user-attachments/assets/5b1bae12-ab18-48d5-844b-41a5a7745f0c" />
 <img width="132" height="286" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-09-09 at 20 00 43" src="https://github.com/user-attachments/assets/de76280b-17de-4bb0-889d-c2cd1912b72c" />
 <img width="132" height="286" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-09-09 at 20 01 00" src="https://github.com/user-attachments/assets/181775d9-76c1-43be-bfb8-c827e6ca4dea" />
 <img width="132" height="286" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-09-09 at 20 01 09" src="https://github.com/user-attachments/assets/37ba9f7a-cd58-4fff-b3a8-3f9652556004" />
