@@ -13,6 +13,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MyMealsScreen from './src/screens/MyMealsScreen';
 import GoalScreen from './src/screens/GoalScreen';
 import WaterTracker from './src/screens/WaterTracker';
+import BarcodeScanner from './src/screens/BarcodeScanner';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -105,6 +106,11 @@ export default function App() {
                 name="WaterTracker" 
                 component={WaterTracker}
                 options={{ title: 'Water Tracker' }}
+              />
+              <Stack.Screen 
+                name="BarcodeScanner" 
+                component={BarcodeScanner}
+                options={{ title: 'Barkod Tarayıcı' }}
               />
             </>
           ) : (
