@@ -210,6 +210,13 @@ const HomeScreen = ({ navigation }) => {
     <Text style={styles.planCardTitle}>Water Tracker</Text>
     <Text style={styles.planCardSub}></Text>
   </TouchableOpacity>
+  <TouchableOpacity
+  style={[styles.planCard, { backgroundColor: '#f0e6ff' }]}
+  onPress={() => navigation.navigate('BarcodeScanner')}
+>
+  <Ionicons name="barcode-outline" size={28} color="#222" />
+  <Text style={styles.planCardTitle}>Scanner</Text>
+</TouchableOpacity>
         </View>
 
         {/* Chatbot Button (added) */}

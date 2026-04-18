@@ -13,7 +13,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MyMealsScreen from './src/screens/MyMealsScreen';
 import GoalScreen from './src/screens/GoalScreen';
 import WaterTracker from './src/screens/WaterTracker';
-import ChatbotScreen from './src/screens/ChatbotScreen';
+import BarcodeScanner from './src/screens/BarcodeScanner';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -39,7 +39,7 @@ export default function App() {
     signIn: async (email) => {
       try {
         await AsyncStorage.setItem('userEmail', email);
-        setIsLoggedIn(true); // User is marked as logged in
+        setIsLoggedIn(true); // Kullanıcı giriş yaptı olarak işaretleniyor
       } catch (error) {
         console.error('Error signing in:', error);
       }
@@ -47,7 +47,7 @@ export default function App() {
     signOut: async () => {
       try {
         await AsyncStorage.removeItem('userEmail');
-        setIsLoggedIn(false); // User is marked as logged out
+        setIsLoggedIn(false); // Kullanıcı çıkış yaptı olarak işaretleniyor
       } catch (error) {
         console.error('Error signing out:', error);
       }
@@ -108,9 +108,9 @@ export default function App() {
                 options={{ title: 'Water Tracker' }}
               />
               <Stack.Screen 
-                name="ChatbotScreen" 
-                component={ChatbotScreen}
-                options={{ title: 'Chatbot' }}
+                name="BarcodeScanner" 
+                component={BarcodeScanner}
+                options={{ title: 'Barkod Tarayıcı' }}
               />
             </>
           ) : (
