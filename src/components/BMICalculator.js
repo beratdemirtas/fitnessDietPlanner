@@ -4,10 +4,10 @@ import { View, Text, StyleSheet } from "react-native";
 const BMICalculator = ({ bmi }) => {
   const getBMICategory = (bmiValue) => {
     const value = parseFloat(bmiValue);
-    if (value < 18.5) return { text: "Zayıf", color: "#3498db" };
+    if (value < 18.5) return { text: "Underweight", color: "#3498db" };
     if (value < 25) return { text: "Normal", color: "#27ae60" };
-    if (value < 30) return { text: "Fazla Kilolu", color: "#f1c40f" };
-    return { text: "Obez", color: "#e74c3c" };
+    if (value < 30) return { text: "Overweight", color: "#f1c40f" };
+    return { text: "Obese", color: "#e74c3c" };
   };
 
   if (!bmi) return null;
@@ -16,7 +16,7 @@ const BMICalculator = ({ bmi }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Vücut Kitle Endeksi:</Text>
+      <Text style={styles.label}>Body Mass Index:</Text>
       <Text style={[styles.bmiValue, { color: category.color }]}>
         {bmi} ({category.text})
       </Text>

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API_BASE_URL from '../config/config';
 
- const API_KEY = 'f0d59d87a6msh534adefccaa272dp1b7d2fjsn95a61f9d747c'; // kendi RapidAPI anahtarın
+ const API_KEY = 'edbddf2150msha9ec6523406aa7ep11871cjsndddfebc46780'; 
  const API_HOST = 'tasty.p.rapidapi.com';
  const API_URL = 'https://tasty.p.rapidapi.com/recipes/list';
 
@@ -173,12 +173,12 @@ const DietScreen = ({ navigation, route }) => {
   }, []);
 
   useEffect(() => {
-    if (route.params?.openModal) { // route.params üzerinden openModal kontrolü
-      setModalVisible(true); // Modalı aç
+    if (route.params?.openModal) { // openModal control via route.params
+      setModalVisible(true); // Open modal 
     }
   }, [route.params]);
 
-  // loadPreferences fonksiyonunu güncelle
+  // update the loadPreferences function
   useEffect(() => {
     const loadPreferences = async () => {
       try {
@@ -195,14 +195,14 @@ const DietScreen = ({ navigation, route }) => {
     loadPreferences();
   }, []);
 
-  // loadMenu useEffect'ini güncelle
+  // update loadMenu useEffect
   useEffect(() => {
     const loadMenu = async () => {
       setMenuLoading(true);
       const today = new Date().toISOString().slice(0, 10);
       try {
         const userEmail = await AsyncStorage.getItem('userEmail');
-        const saved = await AsyncStorage.getItem(`todayMenu_${userEmail}`); // userEmail'e göre saklama
+        const saved = await AsyncStorage.getItem(`todayMenu_${userEmail}`); // storage by userEmail
         if (saved) {
           const { date, menu } = JSON.parse(saved);
           if (date === today) {
@@ -211,7 +211,7 @@ const DietScreen = ({ navigation, route }) => {
             return;
           }
         }
-        // Menü yoksa veya gün değiştiyse yeni menü oluştur
+        // Create a new menu if there is no menu or the day has changed
         await fetchTodayMenuAndSave(preferences, today, userEmail);
       } catch (error) {
         setMenuLoading(false);
@@ -230,7 +230,7 @@ const DietScreen = ({ navigation, route }) => {
         },
       });
       if (!res.ok) {
-        // Hata kodunu konsola yaz
+        // Write the error code to the console
         console.log('API error:', res.status, await res.text());
         throw new Error('API error: ' + res.status);
       }
@@ -264,7 +264,7 @@ const DietScreen = ({ navigation, route }) => {
     };
   }
 
-  // fetchTodayMenuAndSave fonksiyonunu güncelle
+  // update fetchTodayMenuAndSave function
   const fetchTodayMenuAndSave = async (preferences, today, userEmail) => {
     setMenuLoading(true);
     try {
@@ -284,7 +284,7 @@ const DietScreen = ({ navigation, route }) => {
         });
       }
       setTodayMenu(menu);
-      // Kullanıcıya özel kaydetme
+      // User-specific saving
       await AsyncStorage.setItem(`todayMenu_${userEmail}`, JSON.stringify({ date: today, menu }));
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch today\'s menu. Please try again later.');
@@ -302,9 +302,6 @@ const DietScreen = ({ navigation, route }) => {
           <TouchableOpacity style={styles.button} onPress={handleOpenModal}>
             <Text style={styles.buttonText}>Plan My Diet</Text>
           </TouchableOpacity>
-
-          {/* View My Diet Preferences butonunu kaldırdık */}
-
           {/* Diet Preferences Card */}
           <View style={styles.card}>
             <Text style={styles.header2}>Your Diet Preferences</Text>
@@ -398,7 +395,7 @@ const DietScreen = ({ navigation, route }) => {
             )}
           </View>
 
-          {/* Modal burada */}
+          {/* Modal here*/}
           <Modal
             visible={modalVisible}
             animationType="slide"
@@ -714,8 +711,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   preferencesButton: {
-    backgroundColor: '#4CAF50', // Yeşil renk
-    marginTop: 12, // Üst boşluk
+    backgroundColor: '#4CAF50', 
+    marginTop: 12, 
   },
   card: {
     backgroundColor: '#fff',
@@ -738,7 +735,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   mealCard: {
-    backgroundColor: '#f0f0f0', // Beyaz arka plan
+    backgroundColor: '#f0f0f0', 
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
@@ -800,25 +797,25 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    backgroundColor: '#f0f0f0', // Hafif gri arka plan
+    backgroundColor: '#f0f0f0', 
     borderRadius: 8,
     padding: 1,
   },
   sectionTitle: {
-    fontSize: 16, // Küçültüldü
+    fontSize: 16, 
     fontWeight: '600',
     color: '#2d4d6a',
     marginBottom: 6,
   },
   ingredientText: {
-    fontSize: 13, // Küçültüldü
+    fontSize: 13, 
     color: '#555',
     marginBottom: 1,
     paddingLeft: 1,
     lineHeight: 17,
   },
   instructionText: {
-    fontSize: 13, // Küçültüldü
+    fontSize: 13, 
     color: '#555',
     marginBottom: 1,
     lineHeight: 17,

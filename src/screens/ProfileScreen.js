@@ -210,10 +210,10 @@ export default function ProfileScreen() {
                 throw new Error(data.message || 'Failed to delete profile.');
               }
 
-              // AsyncStorage'ı temizle
+              // Clear AsyncStorage
               await AsyncStorage.clear();
               
-              // AuthContext'ten signOut'u çağır
+              // Call signOut from AuthContext
               await signOut();
 
               Alert.alert(
@@ -223,7 +223,7 @@ export default function ProfileScreen() {
                   {
                     text: 'OK',
                     onPress: () => {
-                      // App.js'deki route ismiyle eşleştirdik
+                      // We matched the route name in App.js
                       navigation.navigate('LoginScreen');
                     }
                   }
@@ -240,7 +240,7 @@ export default function ProfileScreen() {
     );
   };
 
-  // BMI kategorisi fonksiyonu
+  // BMI category function
   const getBMICategory = (bmi) => {
     if (!bmi) return '';
     const val = parseFloat(bmi);

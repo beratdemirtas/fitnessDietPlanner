@@ -138,7 +138,6 @@ export default function MyMealsScreen() {
         body: JSON.stringify(mealToSend),
       });
       Alert.alert('Consumed', 'Meal added to today!');
-      navigation.navigate('MealTracker');
     } catch (e) {
       Alert.alert('Error', 'Could not add meal to today.');
     }
@@ -166,7 +165,7 @@ export default function MyMealsScreen() {
     if (!selectedFavoriteMeal) return;
     let meal = { ...selectedFavoriteMeal, mealType: selectedMealType };
 
-    // Eğer foods dizisi yoksa oluştur
+    // Create if foods array does not exist
     if (!meal.foods) {
       meal.foods = [{
         description: meal.name,
@@ -302,7 +301,6 @@ export default function MyMealsScreen() {
           {favorites.length === 0 && <Text style={styles.infoText}>No favorites yet.</Text>}
           {favorites.map(meal => (
             <View key={meal.id} style={styles.mealCard}>
-              {/* Favori kartı içeriği My Meals ile aynı hizaya getirildi */}
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', width: '100%' }}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.mealName, { textAlign: 'left', marginBottom: 0 }]} numberOfLines={2} ellipsizeMode='tail'>
@@ -453,9 +451,9 @@ const styles = StyleSheet.create({
   mealTypeText: {
     position: 'absolute',
     top: 8,
-    left: 12, // Sol üst köşe için left kullanıyoruz
-    fontSize: 18, // Daha büyük yazı tipi
+    left: 12, 
+    fontSize: 18, 
     fontWeight: 'bold',
-    color: '#4CAF50', // Yeşil renk
+    color: '#4CAF50',
   },
 });

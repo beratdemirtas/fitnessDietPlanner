@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import API_BASE_URL from '../config/config';
 
-const API_URL = `${API_BASE_URL}/api/meals`; // Gerekirse IP ile değiştirebiliriz burayı !!
+const API_URL = `${API_BASE_URL}/api/meals`;
 const USDA_API_KEY = 'q73lnVjXeJ4Gp1bowe8yjT0fVgf7AbiNgZZi3A6Z';
 const USDA_API_URL = 'https://api.nal.usda.gov/fdc/v1/foods/search';
 
@@ -189,7 +189,7 @@ export default function MealTrackerScreen() {
       return true;
     });
 
-  // FAVORİLERİ YÜKLE
+  // UPLOAD FAVORITES
   const loadFavorites = async () => {
     try {
       const email = await AsyncStorage.getItem('userEmail');
@@ -201,7 +201,7 @@ export default function MealTrackerScreen() {
     }
   };
 
-  // FAVORİLERİ KAYDET
+  // SAVE FAVORITES
   const saveFavorites = async (favList) => {
     setFavorites(favList);
     const email = await AsyncStorage.getItem('userEmail');
@@ -240,7 +240,7 @@ export default function MealTrackerScreen() {
   };
 
   const getFoodImage = (food) => {
-    // USDA bazen image kaynağı döner, yoksa örnek bir görsel kullan
+    // USDA sometimes returns image source, otherwise use a sample image
     return food?.foodAttributes?.find(attr => attr.name === 'imageUrl')?.value ||
       'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80';
   };
@@ -268,11 +268,11 @@ export default function MealTrackerScreen() {
     AsyncStorage.setItem('macroGoals', JSON.stringify(goalInput));
   };
 
-  // Sadece seçilen güne ait yemekleri göster (backend yanlış veri dönerse de güvenli olsun)
+  // Show only dishes from the selected day (safe even if the backend returns incorrect data)
   const selectedDateStr = selectedDate.toISOString().split('T')[0];
   const filteredMealsForDay = mealsForDay.filter(meal => meal.date === selectedDateStr);
 
-  // Toplam makroları ve kalori sadece filteredMeals üzerinden hesapla
+  // Calculate total macros and calories only through filteredMeals
   const getTotals = () => {
     const totalProtein = filteredMealsForDay.reduce((sum, m) => sum + (m && typeof m.protein === 'number' ? m.protein : 0), 0);
     const totalFat = filteredMealsForDay.reduce((sum, m) => sum + (m && typeof m.fat === 'number' ? m.fat : 0), 0);
@@ -284,9 +284,9 @@ export default function MealTrackerScreen() {
   const totals = getTotals();
 
   const macroBarColor = (percent) => {
-    if (percent >= 100) return '#E57373'; // kırmızı
-    if (percent >= 80) return '#FFD54F'; // sarı
-    return '#81C784'; // yeşil
+    if (percent >= 100) return '#E57373'; 
+    if (percent >= 80) return '#FFD54F'; 
+    return '#81C784'; 
   };
 
   const macroList = [
@@ -295,7 +295,7 @@ export default function MealTrackerScreen() {
     { key: 'fat', label: 'Fat', icon: '🥑', total: totals.totalFat, goal: macroGoals.fat },
   ];
 
-  // Eksik makro uyarısı veriyor burası
+  // Missing macro warning hereIt gives missing macro warning here
   const macroWarnings = macroList.filter(m => m.total < m.goal * 0.8).map(m => `You are below your ${m.label.toLowerCase()} goal!`);
 
   // Fetch meals for selected day from backend
@@ -334,6 +334,13 @@ export default function MealTrackerScreen() {
     fetchMealsForDay();
   }, [selectedDate, userEmail]);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchMealsForDay();
+    });
+    return unsubscribe;
+  }, [navigation, selectedDate, userEmail]);
+
   // consume meal (POST to backend)
   const handleAddMeal = async (meal) => {
     try {
@@ -346,8 +353,8 @@ export default function MealTrackerScreen() {
         carbs: Number(meal.carbs) || 0,
         calories: Number(meal.calories) || 0,
         date: dateStr,
-        mealType: meal.mealType || 'custom', // mealType ekleniyor
-        foods: meal.foods || [] // foods ekleniyor
+        mealType: meal.mealType || 'custom', // adding mealType
+        foods: meal.foods || [] // adding foods
       };
 
       const response = await fetch(API_URL, {
@@ -414,7 +421,7 @@ export default function MealTrackerScreen() {
     return acc;
   }, { protein: 0, fat: 0, carbs: 0, calories: 0 });
 
-  // Tarih formatını düzenleyen yardımcı fonksiyon
+  // Helper function to edit the date format
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -424,7 +431,7 @@ export default function MealTrackerScreen() {
     });
   };
 
-  // Tarih seçici için handler
+  // Handler for date picker
   const onDateChange = (event, selected) => {
     setShowDatePicker(false);
     if (selected) {
@@ -487,7 +494,7 @@ export default function MealTrackerScreen() {
     setGoalInput(newMacroGoals);
   };
 
-  // Modalı açmadan önce profil bilgilerini doldur:
+  // Fill in your profile information before opening the modal:
   const openGoalModal = async () => {
     try {
       const profileStr = await AsyncStorage.getItem('userProfile');
@@ -501,7 +508,7 @@ export default function MealTrackerScreen() {
           weight: profile.weight || ''
         }));
       } else {
-        // Eğer AsyncStorage'da veri yoksa API'den çek
+        // If there is no data in AsyncStorage, pull from API
         const userEmail = await AsyncStorage.getItem('userEmail');
         if (userEmail) {
           const response = await fetch(`${API_BASE_URL}/api/user/profile?email=${userEmail}`);
@@ -568,7 +575,6 @@ export default function MealTrackerScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Meal Tracking</Text>
-      {/* Şık ve modern 'Today's Total' kutusu */}
       <View style={styles.todaysTotalCard}>
         <Text style={styles.todaysTotalLabel}>Today's Total</Text>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: 6 }}>
@@ -685,7 +691,6 @@ export default function MealTrackerScreen() {
         <View style={[styles.modalContent, { maxHeight: '85%', width: '90%', justifyContent: 'center', alignItems: 'center' }]}>
           <ScrollView
             contentContainerStyle={{
-              //flexGrow: 1,
               justifyContent: 'center',
               alignItems: 'center',
               paddingBottom: 24,
@@ -813,7 +818,7 @@ export default function MealTrackerScreen() {
                 if (mealItems.length === 0) { setError('Please add at least one food or drink.'); return; }
                 setCreatingMealLoading(true);
                 try {
-                  // 1. Local'e kaydet
+                  // 1. Save to Local
                   const myMealsKey = `myMeals_${userEmail}`;
                   const myMeals = await AsyncStorage.getItem(myMealsKey);
                   const newMyMeals = myMeals ? JSON.parse(myMeals) : [];
@@ -834,7 +839,7 @@ export default function MealTrackerScreen() {
                   });
                   await AsyncStorage.setItem(myMealsKey, JSON.stringify(newMyMeals));
 
-                  // 2. Backend'e de kaydet!
+                  // 2. Save to the backend too!
                   await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1079,9 +1084,9 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20,           // Daha az padding
-    width: '85%',          // Genişliği artır
-    maxHeight: '80%',      // Yüksekliği sınırla
+    padding: 20,           
+    width: '85%',          
+    maxHeight: '80%',      
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -1385,9 +1390,9 @@ const styles = StyleSheet.create({
   modalContentModern: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 20,           // Daha az padding
-    width: '85%',          // Genişliği artır
-    maxHeight: '80%',      // Yüksekliği sınırla
+    padding: 20,           
+    width: '85%',          
+    maxHeight: '80%',      
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

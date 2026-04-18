@@ -13,7 +13,7 @@
     "3- Draw shoulder blades back and down, keeping elbows tucked close to your body.",
     "4- Exhale as you push back to the starting position."
   ],
-    "category": "zayif"
+    "category": "underweight"
   },
   {
     "id": "102",
@@ -29,7 +29,7 @@
     "3- Continue down to full depth.",
     "4- Return to starting position."
   ],
-    "category": ["zayif", "fazla_kilolu"]
+    "category": ["underweight", "overweight"]
   },
   {
     "id": "103",
@@ -45,7 +45,7 @@
     "3- Slowly return to starting position by bending your knee and lowering your leg.",
     "4- Switch Legs. Repeat."
   ],
-    "category": ["zayif", "obez"]
+    "category": ["underweight", "obese"]
   },
   {
     "id": "104",
@@ -60,7 +60,7 @@
     "2- Raise one dumbbell and twist your forearm until it is vertical and your palm faces the shoulder.",
     "3- Lower to original position and repeat with opposite arm."
   ],
-    "category": "zayif"
+    "category": "underweight"
   },
   {
     "id": "105",
@@ -76,7 +76,7 @@
     "3- Slowly press back up to the starting point.",
     "4- TIP: Make this harder by raising your feet off the floor and adding weight."
   ],
-    "category": "zayif"
+    "category": "underweight"
   },
 
   {
@@ -93,7 +93,7 @@
     "3- Ensure you remain upright, and your front knee stay above the front foot.",
     "4- Push off the floor with your front foot until you return to the starting position. Switch legs."
   ],
-    "category": ["normal", "obez"]
+    "category": ["normal", "obese"]
   },
   {
     "id": "202",
@@ -124,7 +124,7 @@
     "2- Raise your arms on either side with a slight bend in your elbow until they are parallel with the floor. Pause at the top of the motion.",
     "3- Slowly return your arms down to starting position."
   ],
-    "category": ["normal","fazla_kilolu"]
+    "category": ["normal","overweight"]
   },
   {
     "id": "204",
@@ -154,7 +154,7 @@
     "2- The closer your torso is to parallel with the ground the longer the range of motion will be at your shoulder. The better the results you'll get from the exercise.",
     "3- Let your arms hang freely, and then pull your elbow joint straight back toward the ceiling."
   ],
-    "category": ["normal", "fazla_kilolu"]
+    "category": ["normal", "overweight"]
   },
 
   {
@@ -170,7 +170,7 @@
     "2- Lower your body, keeping elbows close.",
     "3- Push back up to the starting position."
   ],
-    "category": "fazla_kilolu"
+    "category": "overweight"
   },
 
   {
@@ -185,7 +185,7 @@
     "1- Hold your arms out to your sides.",
     "2- Rotate your arms backwards in small circles."
   ],
-    "category": "obez"
+    "category": "obese"
   },
   {
     "id": "402",
@@ -200,7 +200,7 @@
     "2- Lower into a squat position, thighs parallel to the floor, knees above ankles.",
     "3- Hold the position, maintaining tension in your core and legs."
   ],
-    "category": "obez"
+    "category": "obese"
   },
   {
     "id": "403",
@@ -215,6 +215,6 @@
     "2- Reach toward your knee flexing your abs and obliques.",
     "3- Do the prescribed amount of reps, then switch sides."
   ],
-    "category": ["fazla_kilolu","obez"]
+    "category": ["overweight","obese"]
   }
 ]

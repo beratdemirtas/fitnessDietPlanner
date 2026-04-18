@@ -38,16 +38,16 @@ const LoginScreen = ({ navigation }) => {
         throw new Error(data.message || 'Login failed');
       }
 
-      // Kullanıcı e-postasını kaydet
+      // Save user email
       await AsyncStorage.setItem('userEmail', email);
 
-      // Kullanıcıya özel başlangıç verilerini oluştur
+      // Create user-specific startup data
       await initializeUserData(email);
 
-      // Diyet planını kontrol et ve gerekiyorsa oluştur
+      // Check your diet plan and create it if necessary
       await initializeDietPlan(email);
 
-      // Kullanıcı giriş yaptı olarak işaretleniyor
+      // User is marked as logged in
       signIn(email);
     } catch (error) {
       Alert.alert('Error', error.message);
@@ -56,11 +56,11 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  // Kullanıcıya özel başlangıç verilerini oluştur
+  // Create user-specific startup data
   const initializeUserData = async (email) => {
     try {
-      await AsyncStorage.setItem(`favoriteMeals_${email}`, JSON.stringify([])); // Favori yemekler
-      await AsyncStorage.setItem(`dailyCalories_${email}`, '2000'); // Günlük kalori hedefi
+      await AsyncStorage.setItem(`favoriteMeals_${email}`, JSON.stringify([])); // Favorite dishes
+      await AsyncStorage.setItem(`dailyCalories_${email}`, '2000'); // Daily calorie target
       console.log('User data initialized for:', email);
     } catch (e) {
       console.error('Error initializing user data:', e);

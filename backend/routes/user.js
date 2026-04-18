@@ -45,7 +45,7 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'User not found' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'Invalid password' });
-    // JWT opsiyonel, şimdilik sadece user döneceğiz
+    // JWT optional, for now we will only return user
     res.json({
       user: {
         name: user.name,
@@ -99,7 +99,7 @@ router.put('/profile', async (req, res) => {
     if (height) user.height = height;
     if (weight) user.weight = weight;
     if (photo) user.photo = photo;
-    // BMI güncelle
+    // Update BMI
     if (height || weight) {
       const h = parseFloat(user.height) / 100;
       const w = parseFloat(user.weight);
@@ -133,12 +133,12 @@ router.delete('/profile', async (req, res) => {
   }
 });
 
-// Günlük toplam makrolar endpoint'i
+// Daily total macros endpoint
 router.get('/daily-macros', async (req, res) => {
   try {
     const { email, date } = req.query;
     if (!email || !date) {
-      return res.status(400).json({ message: 'email ve date zorunludur' });
+      return res.status(400).json({ message: 'email and date are mandatory' });
     }
     const meals = await Meal.find({ userEmail: email, date });
     const totals = meals.reduce(
@@ -157,7 +157,7 @@ router.get('/daily-macros', async (req, res) => {
   }
 });
 
-// Diyet planını başlat
+// Start your diet plan
 router.post('/initialize-diet-plan', async (req, res) => {
   try {
     const { email } = req.body;
@@ -165,19 +165,19 @@ router.post('/initialize-diet-plan', async (req, res) => {
       return res.status(400).json({ message: 'Email is required' });
     }
 
-    // Kullanıcıyı kontrol et
+    // Check user
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Diyet planını kontrol et
+    // Check your diet plan
     const existingPlan = await DietPlan.findOne({ userId: user._id });
     if (existingPlan) {
       return res.json({ message: 'Diet plan already exists', dietPlan: existingPlan });
     }
 
-    // Varsayılan diyet planı oluştur
+    // Create a default diet plan
     const defaultPlan = new DietPlan({
       userId: user._id,
       dailyCalories: 2000,
@@ -196,7 +196,7 @@ router.post('/initialize-diet-plan', async (req, res) => {
   }
 });
 
-// Diyet planı var mı kontrol et
+// Check if there is a diet plan
 router.get('/has-diet-plan', async (req, res) => {
   try {
     const { email } = req.query;

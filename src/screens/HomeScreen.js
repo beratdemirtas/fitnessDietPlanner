@@ -4,14 +4,14 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import API_BASE_URL from '../config/config'; // ekle
+import API_BASE_URL from '../config/config'; 
 
 const API_URL = `${API_BASE_URL}/api/user/profile`;
 
 const HomeScreen = ({ navigation }) => {
-  const [userData, setUserData] = useState({}); // Varsayılan değer: boş nesne
+  const [userData, setUserData] = useState({}); // Default value: empty object
   const [weeklyActivity, setWeeklyActivity] = useState([]);
-  const [userName, setUserName] = useState('User'); // Varsayılan değer: 'User'
+  const [userName, setUserName] = useState('User'); // Default value: 'User'
   const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [weeklyLabels, setWeeklyLabels] = useState(['', '', '', '', '', '', '']);
   const [todayCalories, setTodayCalories] = useState(0);
@@ -19,12 +19,12 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchUserName = async () => {
       const userEmail = await AsyncStorage.getItem('userEmail');
-      console.log('User Email:', userEmail); // Kullanıcı e-postasını kontrol et
+      console.log('User Email:', userEmail); // Check user email
       if (userEmail) {
         try {
           const response = await fetch(`${API_URL}?email=${userEmail}`);
           const data = await response.json();
-          console.log('User Data:', data); // API'den gelen veriyi kontrol et
+          console.log('User Data:', data); // Check data from API
           if (data && data.name) {
             setUserName(data.name);
             setUserData(data);
@@ -76,7 +76,7 @@ const HomeScreen = ({ navigation }) => {
           const completed = completedData ? JSON.parse(completedData) : {};
           const thisWeek = getThisWeekDays();
 
-          // Sadece giriş yapan kullanıcının verisini kullan
+          // Use only the logged in user's data
           const userCompleted = completed[userEmail] || {};
 
           const data = thisWeek.map(({ date }) => userCompleted[date] ? userCompleted[date].length : 0);
@@ -85,7 +85,7 @@ const HomeScreen = ({ navigation }) => {
           setWeeklyData(data);
           setWeeklyLabels(labels);
         } catch (error) {
-          console.error('Aktivite verisi yüklenirken hata oluştu:', error);
+          console.error('Error loading activity data:', error);
         }
       };
 
@@ -119,7 +119,7 @@ const HomeScreen = ({ navigation }) => {
       const email = await AsyncStorage.getItem('userEmail');
       if (email) {
         const dailyCalories = await AsyncStorage.getItem(`dailyCalories_${email}`);
-        setTodayCalories(Number(dailyCalories) || 2000); // Varsayılan değer: 2000
+        setTodayCalories(Number(dailyCalories) || 2000); // Default value: 2000
       }
     };
     fetchUserData();
@@ -132,7 +132,7 @@ const HomeScreen = ({ navigation }) => {
   const handleLogin = async (email) => {
     try {
       await AsyncStorage.setItem('userEmail', email);
-      console.log('User Email Saved:', email); // Kaydedilen e-postayı kontrol et
+      console.log('User Email Saved:', email); // Check saved email
     } catch (e) {
       console.error('Error saving user email:', e);
     }
@@ -154,10 +154,10 @@ const HomeScreen = ({ navigation }) => {
       }
 
       if (data.hasDietPlan) {
-        // Kullanıcının diyet planı varsa DietPreferencesScreen'e yönlendir
+        // Redirect to DietPreferencesScreen if the user has a diet plan
         navigation.navigate('DietPreferencesScreen', { email });
       } else {
-        // Kullanıcının diyet planı yoksa DietScreen'e yönlendir
+        // Redirect to DietScreen if the user has no diet plan
         navigation.navigate('DietScreen', { email });
       }
     } catch (error) {
@@ -181,7 +181,7 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.sectionTitle}>My Plan</Text>
         <View style={styles.planGrid}>
           <TouchableOpacity
-    style={[styles.planCard, { backgroundColor: '#a7c7e7' }]} // Workout: açık mavi
+    style={[styles.planCard, { backgroundColor: '#a7c7e7' }]} 
     onPress={() => navigation.navigate('Workout')}
   >
     <MaterialCommunityIcons name="dumbbell" size={28} color="#222" />
@@ -190,7 +190,7 @@ const HomeScreen = ({ navigation }) => {
   </TouchableOpacity>
   <TouchableOpacity
   style={[styles.planCard, { backgroundColor: '#fbeee0', borderColor: '#e6b8a2', borderWidth: 1 }]}
-  onPress={() => navigation.navigate('DietScreen')} // DietScreen'e yönlendirme
+  onPress={() => navigation.navigate('DietScreen')} // Referral to DietScreen
 >
   <Ionicons name="fast-food-outline" size={28} color="#222" />
   <Text style={styles.planCardTitle}>Diet Plans</Text>
@@ -203,7 +203,7 @@ const HomeScreen = ({ navigation }) => {
     <Text style={styles.planCardTitle}>Meals</Text>
   </TouchableOpacity>
   <TouchableOpacity
-    style={[styles.planCard, { backgroundColor: '#b3e0f2' }]} // Water Tracker: açık turkuaz
+    style={[styles.planCard, { backgroundColor: '#b3e0f2' }]}
     onPress={() => navigation.navigate('WaterTracker')}
   >
     <Ionicons name="water-outline" size={28} color="#222" />
@@ -211,6 +211,17 @@ const HomeScreen = ({ navigation }) => {
     <Text style={styles.planCardSub}></Text>
   </TouchableOpacity>
         </View>
+
+        {/* Chatbot Button (added) */}
+        <TouchableOpacity
+          style={styles.chatbotButton}
+          onPress={() => navigation.navigate('ChatbotScreen')}
+        >
+          <Text style={styles.chatbotText}>Chatbot</Text>
+          <View style={styles.chatbotIconWrap}>
+            <MaterialCommunityIcons name="robot" size={34} color="#3b2db5" />
+          </View>
+        </TouchableOpacity>
 
         {/* Weekly Stats */}
         <Text style={styles.sectionTitle}>Weekly Stats</Text>
@@ -291,6 +302,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
+  },
+  /* Chatbot button styles */
+  chatbotButton: {
+    backgroundColor: '#98EFB4FF',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    marginVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 2,
+    borderColor: '#89EAA6FF',
+  },
+  chatbotText: {
+    color: '#06270a',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  chatbotIconWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#3b2db5',
   },
 });
 

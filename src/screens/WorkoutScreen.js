@@ -78,10 +78,10 @@ const WorkoutScreen = ({ navigation }) => {
   }, []);
 
   const getBMICategory = (bmiValue) => {
-    if (bmiValue < 18.5) return 'zayif';
-    if (bmiValue < 25) return 'normal';
-    if (bmiValue < 30) return 'fazla_kilolu';
-    return 'obez';
+    if (bmiValue < 18.5) return 'underweight';
+    if (bmiValue < 25) return 'overweight';
+    if (bmiValue < 30) return 'overweight';
+    return 'obese';
   };
 
   const completeExercise = async (exerciseId) => {
@@ -151,10 +151,10 @@ const WorkoutScreen = ({ navigation }) => {
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           ListHeaderComponent={<Text style={styles.header}>Workout Recommendations</Text>}
-          ListEmptyComponent={<Text style={styles.noDataText}>Egzersiz bulunamadı.</Text>}
+          ListEmptyComponent={<Text style={styles.noDataText}>Exercise not found.</Text>}
         />
       ) : (
-        <Text style={styles.noDataText}>Lütfen önce BMI değerinizi kaydedin.</Text>
+        <Text style={styles.noDataText}>Please record your BMI value first.</Text>
       )}
     </SafeAreaView>
   );

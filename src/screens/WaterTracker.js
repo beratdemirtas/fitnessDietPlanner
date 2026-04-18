@@ -13,16 +13,16 @@ const WaterTracker = () => {
   const { userEmail } = useContext(AuthContext);
   const [cups, setCups] = useState(0);
   const [goalLitre, setGoalLitre] = useState(DEFAULT_GOAL_LITRE);
-  const [waterIntake, setWaterIntake] = useState(0); // Günlük içilen su miktarı (ml)
-  const [dailyGoal, setDailyGoal] = useState(2000); // Günlük hedef (ml)
-  const [selectedDate, setSelectedDate] = useState(new Date()); // Bugünün tarihi
+  const [waterIntake, setWaterIntake] = useState(0); // Amount of water drunk per day (ml)
+  const [dailyGoal, setDailyGoal] = useState(2000); // Daily target (ml)
+  const [selectedDate, setSelectedDate] = useState(new Date()); // Today's history
 
   const goalMl = goalLitre * ML_IN_LITRE;
   const goalCups = Math.round(goalMl / CUP_ML);
   const drankMl = cups * CUP_ML;
   const progress = Math.round((drankMl / goalMl) * 100);
 
-  // Sayfa açılınca backend'den veri çek
+  // Pull data from backend when the page opens
   useEffect(() => {
     const fetchWater = async () => {
       try {
@@ -39,7 +39,7 @@ const WaterTracker = () => {
     fetchWater();
   }, [userEmail, goalLitre, selectedDate]);
 
-  // Seçilen tarih değiştiğinde AsyncStorage'dan veriyi yükle
+  // Load data from AsyncStorage when the selected date changes
   useEffect(() => {
     const loadWaterIntake = async () => {
       try {
@@ -53,11 +53,11 @@ const WaterTracker = () => {
     loadWaterIntake();
   }, [selectedDate, userEmail]);
 
-  // Sadece Save butonuna basınca kaydet
+  // Just press the Save button and save
   const saveWater = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      // Backend'e kaydet
+      // Save to Backend
       const dateKey = selectedDate.toISOString().split('T')[0];
       await fetch(`${API_BASE_URL}/api/water-intake`, {
         method: 'POST',
@@ -69,7 +69,7 @@ const WaterTracker = () => {
         }),
       });
 
-      // AsyncStorage'a kaydet (email ile birlikte)
+      // Save to AsyncStorage (with email)
       await AsyncStorage.setItem(`waterIntake_${userEmail}_${dateKey}`, cups.toString());
 
       Alert.alert('Saved!', 'Your water intake has been saved.');

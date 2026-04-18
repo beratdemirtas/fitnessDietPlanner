@@ -13,6 +13,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import MyMealsScreen from './src/screens/MyMealsScreen';
 import GoalScreen from './src/screens/GoalScreen';
 import WaterTracker from './src/screens/WaterTracker';
+import ChatbotScreen from './src/screens/ChatbotScreen';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -38,7 +39,7 @@ export default function App() {
     signIn: async (email) => {
       try {
         await AsyncStorage.setItem('userEmail', email);
-        setIsLoggedIn(true); // Kullanıcı giriş yaptı olarak işaretleniyor
+        setIsLoggedIn(true); // User is marked as logged in
       } catch (error) {
         console.error('Error signing in:', error);
       }
@@ -46,7 +47,7 @@ export default function App() {
     signOut: async () => {
       try {
         await AsyncStorage.removeItem('userEmail');
-        setIsLoggedIn(false); // Kullanıcı çıkış yaptı olarak işaretleniyor
+        setIsLoggedIn(false); // User is marked as logged out
       } catch (error) {
         console.error('Error signing out:', error);
       }
@@ -105,6 +106,11 @@ export default function App() {
                 name="WaterTracker" 
                 component={WaterTracker}
                 options={{ title: 'Water Tracker' }}
+              />
+              <Stack.Screen 
+                name="ChatbotScreen" 
+                component={ChatbotScreen}
+                options={{ title: 'Chatbot' }}
               />
             </>
           ) : (
