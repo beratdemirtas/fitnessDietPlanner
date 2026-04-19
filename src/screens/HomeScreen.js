@@ -217,6 +217,13 @@ const HomeScreen = ({ navigation }) => {
   <Ionicons name="barcode-outline" size={28} color="#222" />
   <Text style={styles.planCardTitle}>Scanner</Text>
 </TouchableOpacity>
+  <TouchableOpacity
+  style={[styles.planCard, { backgroundColor: '#ffe6f0' }]}
+  onPress={() => navigation.navigate('ImageScanner')}
+>
+  <Ionicons name="camera-outline" size={28} color="#222" />
+  <Text style={styles.planCardTitle}>Food Photo</Text>
+</TouchableOpacity>
         </View>
 
         {/* Chatbot Button (added) */}
