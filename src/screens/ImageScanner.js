@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { GEMINI_API_KEY } from '@env';
 
-const GEMINI_API_KEY = 'AIzaSyC3QpMB2iPNNErizz0ZfIS0t5IhrQzGk5c';
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
 export default function FoodScanner() {
@@ -21,6 +22,7 @@ export default function FoodScanner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const cameraRef = useRef(null);
+  const navigation = useNavigation();
 
   const takePicture = async () => {
     if (!cameraRef.current) return;
@@ -65,7 +67,15 @@ export default function FoodScanner() {
       );
 
       const data = await response.json();
-      const text = data.candidates[0].content.parts[0].text;
+      if (!response.ok) {
+        const message = data?.error?.message || data?.message || 'API hatası oluştu.';
+        throw new Error(message);
+      }
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new Error('Model yanıtı alınamadı. Lütfen tekrar deneyin veya API kotanızı kontrol edin.');
+      }
+
       const cleaned = text.replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(cleaned);
 
@@ -78,7 +88,8 @@ export default function FoodScanner() {
       });
     } catch (err) {
       console.error(err);
-      setError('Yemek analizi başarısız oldu. Tekrar deneyin.');
+      const message = err.message || 'Yemek analizi başarısız oldu. Tekrar deneyin.';
+      setError(message);
       setProduct(null);
     } finally {
       setLoading(false);
@@ -89,6 +100,20 @@ export default function FoodScanner() {
     setProduct(null);
     setPhotoUri(null);
     setError(null);
+  };
+
+  const handleAddAsMeal = () => {
+    if (!product) return;
+    navigation.navigate('MealTracker', {
+      scannedMeal: {
+        name: product.name || 'Scanned Meal',
+        calories: Number(product.calories) || 0,
+        protein: Number(product.protein) || 0,
+        carbs: Number(product.carbohydrates) || 0,
+        fat: Number(product.fat) || 0,
+        mealType: 'custom',
+      },
+    });
   };
 
   // İzin yok
@@ -190,10 +215,16 @@ export default function FoodScanner() {
           </View>
         </ScrollView>
 
-        <TouchableOpacity style={styles.retryButton} onPress={resetScanner}>
-          <MaterialIcons name="camera-alt" size={24} color="white" />
-          <Text style={styles.retryButtonText}>Yeni Fotoğraf Çek</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonStack}>
+          <TouchableOpacity style={styles.retryButton} onPress={handleAddAsMeal}>
+            <MaterialIcons name="check" size={24} color="white" />
+            <Text style={styles.retryButtonText}>Öğün Olarak Ekle</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryButton} onPress={resetScanner}>
+            <MaterialIcons name="camera-alt" size={24} color="#FF6B6B" />
+            <Text style={styles.secondaryButtonText}>Yeni Fotoğraf Çek</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -277,12 +308,22 @@ const styles = StyleSheet.create({
   nutritionLabel: { fontSize: 12, color: '#666', marginTop: 4 },
   nutritionValue: { fontSize: 22, fontWeight: 'bold', color: '#333', marginTop: 4 },
   nutritionUnit: { fontSize: 11, color: '#999', marginTop: 2 },
-  retryButton: {
+  buttonStack: {
     position: 'absolute', bottom: 20, left: 20, right: 20,
+    flexDirection: 'column', justifyContent: 'center',
+  },
+  retryButton: {
     backgroundColor: '#FF6B6B', flexDirection: 'row', alignItems: 'center',
     justifyContent: 'center', paddingVertical: 14, borderRadius: 8, elevation: 5,
   },
   retryButtonText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 10 },
+  secondaryButton: {
+    backgroundColor: '#fff', flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', paddingVertical: 14, borderRadius: 8, elevation: 3,
+    borderWidth: 1, borderColor: '#FF6B6B',
+    marginTop: 10,
+  },
+  secondaryButtonText: { color: '#FF6B6B', fontSize: 16, fontWeight: '600', marginLeft: 10 },
   permissionCard: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
   permissionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginTop: 15, marginBottom: 10 },
   permissionDescription: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20 },
