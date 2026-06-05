@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Image, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,7 @@ export default function MealTrackerScreen() {
   const [loading, setLoading] = useState(false);
   const [macroFilter, setMacroFilter] = useState('all');
   const navigation = useNavigation();
+  const route = useRoute();
   const [userEmail, setUserEmail] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [favorites, setFavorites] = useState([]);
@@ -73,6 +74,12 @@ export default function MealTrackerScreen() {
     });
     return unsubscribe;
   }, [navigation, userEmail]);
+
+  useEffect(() => {
+    if (!route.params?.scannedMeal || !userEmail) return;
+    handleAddMeal(route.params.scannedMeal);
+    navigation.setParams({ scannedMeal: undefined });
+  }, [route.params?.scannedMeal, userEmail]);
 
   const fetchMeals = async (email) => {
     setLoading(true);
