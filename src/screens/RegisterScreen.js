@@ -81,6 +81,7 @@ const RegisterScreen = () => {
         throw new Error(data.message || 'Registration failed');
       }
       await AsyncStorage.setItem('userName', name);
+      await AsyncStorage.setItem(`vigoIntroPending_${email}`, 'true');
       Alert.alert('Success', 'Registration successful! Please login.', [
         {
           text: 'OK',
