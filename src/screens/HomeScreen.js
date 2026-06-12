@@ -274,7 +274,7 @@ const HomeScreen = ({ navigation }) => {
         {/* Chatbot Button (added) */}
         <TouchableOpacity
           style={styles.chatbotButton}
-          onPress={() => navigation.navigate('ChatbotScreen')}
+          onPress={() => navigation.navigate('TalkToVigo')}
         >
           <Text style={styles.chatbotText}>Talk to Vigo</Text>
           <View style={styles.chatbotIconWrap}>

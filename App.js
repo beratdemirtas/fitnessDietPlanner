@@ -15,6 +15,7 @@ import GoalScreen from './src/screens/GoalScreen';
 import WaterTracker from './src/screens/WaterTracker';
 import BarcodeScanner from './src/screens/BarcodeScanner';
 import ImageScanner from './src/screens/ImageScanner';
+import TalkToVigo from './src/screens/TalkToVigo';
 
 const Stack = createStackNavigator();
 export const AuthContext = createContext();
@@ -117,6 +118,11 @@ export default function App() {
                 name="ImageScanner" 
                 component={ImageScanner}
                 options={{ title: 'Görüntü Tarayıcı' }}
+              />
+              <Stack.Screen 
+                name="TalkToVigo" 
+                component={TalkToVigo}
+                options={{ headerShown: false }}
               />
             </>
           ) : (
